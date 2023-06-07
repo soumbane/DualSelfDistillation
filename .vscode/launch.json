@@ -5,16 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: Train Basic",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "train_basic.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            // "args": [
-            //     "--batch_size", "64",
-            //     "--epochs", "100"
-            // ]
+            "args": [
+                 "--batch_size", "64",
+                 "--epochs", "100",
+            ]
         }
     ]
 }

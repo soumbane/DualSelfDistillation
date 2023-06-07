@@ -21,6 +21,13 @@ from networks import SelfDistillUNETRWithDictOutput as SelfDistilUNETR
 from networks import SelfDistillnnUNetWithDictOutput as SelfDistilnnUNet
 from torchmanager import callbacks, losses
 
+from torchmanager_core import random
+from utils import count_parameters
+
+# initialization
+seed = 100
+random.freeze_seed(seed)
+
 
 if __name__ == "__main__":
     # get configurations
@@ -73,6 +80,10 @@ if __name__ == "__main__":
     #     res_block=True,
     #     )
     
+    ##########################################################################################################
+    ## Count model parameters
+    print(f'The total number of model parameter is: {count_parameters(model)}')
+
     ##########################################################################################################
     
     # initialize optimizer, loss, metrics, and post processing
