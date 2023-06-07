@@ -41,21 +41,21 @@ if __name__ == "__main__":
     last_ckpt_dir = os.path.join(config.experiment_dir, "last.model")
     
     # # load dataset - Load MMWHS Challenge Data
-    # in_channels = 1
-    # training_dataset, validation_dataset, _, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
+    in_channels = 1
+    training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
 
     # load dataset - Load MSD-BraTS Data
-    in_channels = 4
-    training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
+    # in_channels = 4
+    # training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
         
     training_dataset = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=True, collate_fn=pad_list_data_collate)
     validation_dataset = DataLoader(validation_dataset, batch_size=1, collate_fn=pad_list_data_collate)
 
     ##########################################################################################################
     ## Initialize the UNETR model
-    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # for MSD-BraTS and MMWHS(MR/CT)
+    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # for MSD-BraTS and MMWHS(MR/CT)
 
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
+    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
     
     ##########################################################################################################
     ## Initialize the nnUNet model
@@ -87,12 +87,12 @@ if __name__ == "__main__":
     ##########################################################################################################
     
     # initialize optimizer, loss, metrics, and post processing
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS
 
     # # initialize learning rate scheduler (lr used by MMWHS challenge winner)
     # lr_step = max(int(config.epochs / 6), 1)
     # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
 
     # Initilialize Loss Functions
     loss_fn: Union[losses.Loss, dict[str, losses.Loss]]
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         "dice": loss_dice
     }
    
-    # Initialize Metrics
+    # Initialize Metrics for evaluation
     dice_fn = metrics.CumulativeIterationMetric(DiceMetric(include_background=False, reduction="none", get_not_nans=False), target="out")
 
     hd_fn = metrics.CumulativeIterationMetric(HausdorffDistanceMetric(include_background=False, percentile=95.0, reduction="none", get_not_nans=False), target="out")
@@ -142,9 +142,9 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    # manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic.exp/best.model") # for Basic Unetr
+    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic.exp/best.model") # for Basic Unetr
     
-    manager = Manager.from_checkpoint("experiments/multimodalMR_MSD_BraTS_UNETR_Basic.exp/best.model") # for Basic nnUnet
+    # manager = Manager.from_checkpoint("experiments/multimodalMR_MSD_BraTS_UNETR_Basic.exp/best.model") # for Basic nnUnet
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model

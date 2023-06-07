@@ -11,10 +11,10 @@
             "program": "train_basic.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": [
-                 "--batch_size", "64",
-                 "--epochs", "100",
-            ]
+            //"args": [
+            //     "--batch_size", "64",
+            //     "--epochs", "100",
+            //]
         }
     ]
 }

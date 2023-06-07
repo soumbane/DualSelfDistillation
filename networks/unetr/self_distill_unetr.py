@@ -499,10 +499,10 @@ class SelfDistilUNETR(nn.Module):
             
             # out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1) # Half KL Div ONLY for decoders ONLY & WITHOUT feature maps - proving deep supervision is special case of our dual self-distillation design
 
-            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4) # Full KL Div WITHOUT feature maps - includes both encoders and decoders
+            # out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4) # Full KL Div WITHOUT feature maps - includes both encoders and decoders
             
             ## For Basic UNETR ONLY
-            # out = out_main  
+            out = out_main  
         else:
             out = out_main
 

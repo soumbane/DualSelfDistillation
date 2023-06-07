@@ -27,7 +27,7 @@ from .transforms import (
     ToTensord,
 )
 
-def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ranged: bool = True, train_split: int = 4, show_verbose: bool = False) -> Tuple[CacheDataset, CacheDataset, CacheDataset, int]:
+def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ranged: bool = True, train_split: int = 4, show_verbose: bool = False) -> Tuple[CacheDataset, CacheDataset, int]:
     """
     Load dataset
 
@@ -47,7 +47,7 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
         for image_name, label_name in zip(train_images, train_labels)
     ]
 
-    # Assign Testing Set First (4 patients)
+    '''# Assign Testing Set First (4 patients)
     test_data_dicts = data_dicts[:train_split] # First 4 patients for testing
 
     train_data_dicts_temp = data_dicts[train_split:] # Last 16 patients for train/validation
@@ -57,9 +57,13 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     random.Random(seed).shuffle(train_data_dicts_temp)
 
     # Assign Train/Validation Sets (12 for training & 4 for validation)
-    train_data_dicts, val_data_dicts = train_data_dicts_temp[train_split:], train_data_dicts_temp[:train_split]
+    train_data_dicts, val_data_dicts = train_data_dicts_temp[train_split:], train_data_dicts_temp[:train_split]'''
    
-    # train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split]
+    # Patient 1-4 (First 4 patients) for validation - Fold 1
+    train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
+
+    # Patient 5-8 for validation - Fold 2
+    # train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
     
     ##############################################################################################################
 
@@ -155,7 +159,7 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     ################################################################################################
 
     # Test transforms (same as Validation Transforms)
-    test_transforms = val_transforms
+    # test_transforms = val_transforms
 
     ################################################################################################
 
@@ -176,14 +180,14 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
         progress=show_verbose
     )
 
-    test_ds = CacheDataset(
+    '''test_ds = CacheDataset(
         data=test_data_dicts,
         transform=test_transforms,
         num_workers=8,
         progress=show_verbose
-    )
+    )'''
 
     num_classes = 8
 
-    return train_ds, val_ds, test_ds, num_classes  
+    return train_ds, val_ds, num_classes  
 
