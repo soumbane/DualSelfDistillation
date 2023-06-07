@@ -38,7 +38,7 @@ if __name__ == "__main__":
     
     # load dataset - Load MMWHS Challenge Data
     in_channels = 1
-    training_dataset, validation_dataset, _, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
+    training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
 
     # load dataset - Load MSD-BraTS Data
     # in_channels = 4

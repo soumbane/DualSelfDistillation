@@ -3,7 +3,9 @@
 ######################################################################################################################
 ## Modality - CT
 ## For running train script for MMWHS Challenge Multi-class with CT ONLY (on 1 GPU): Dice CE - Basic
-python train_basic.py /home/share/Data/Data_MMWHS_All/CT /home/neil/Lab_work/Medical_Image_Segmentation/Dual_SelfDistillation/trained_models/last_CT_MMWHS_Basic.pth --img_size 96 96 96 --batch_size 1 --epochs 600 --experiment CT_MMWHS_UNETR_Basic.exp --training_split 4 --device cuda:0 --show_verbose
+# python train_basic.py /home/share/Data/Data_MMWHS_All/CT /home/neil/Lab_work/Medical_Image_Segmentation/Dual_SelfDistillation/trained_models/last_CT_MMWHS_Basic.pth --img_size 96 96 96 --batch_size 1 --epochs 600 --experiment CT_MMWHS_UNETR_Basic.exp --training_split 4 --device cuda:0
+
+python train_basic.py /home/share/Data/Data_MMWHS_All/CT /home/neil/Lab_work/Medical_Image_Segmentation/Dual_SelfDistillation/trained_models/last_CT_MMWHS_Basic.pth --img 96 96 96 --batch_size 1 --epochs 600 --experiment CT_MMWHS_UNETR_Basic.exp --training_split 4 --device cuda:0 --show_verbose
 
 ## For running train script for MMWHS Challenge Multi-class with CT ONLY (on 1 GPU): Dice CE - Deep Supervision
 # python train_DeepSuperOnly.py /home/neil/Lab_work/Medical_Image_Segmentation/Data_MMWHS_All/CT /home/neil/Lab_work/Medical_Image_Segmentation/Dual_SelfDistillation/trained_models/last_CT_MMWHS_DeepSuperOnly.pth --img_size 96 96 96 --batch_size 1 --epochs 600 --experiment CT_MMWHS_UNETR_DeepSuperOnly.exp --training_split 4 --device cuda:0 --show_verbose
