@@ -44,7 +44,7 @@ class CumulativeIterationMetric(Metric):
             - dim: An `int` of the dimension of subresult
             - target: An optional `str` of target name in `input` and `target` during direct calling
         """
-        super().__init__(metric_fn, target) # type: ignore
+        super().__init__(metric_fn, target=target) # type: ignore
         self.__dim = dim
 
     def reset(self) -> None:

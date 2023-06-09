@@ -5,16 +5,50 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: Train Basic",
             "type": "python",
             "request": "launch",
             "program": "train_basic.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            //"args": [
-            //     "--batch_size", "64",
-            //     "--epochs", "100",
-            //]
+            "args": [
+                "/home/share/Data/Data_MMWHS_All/CT",
+                "/home/neil/Lab_work/Medical_Image_Segmentation/Dual_Self-Distillation/trained_models/last_CT_MMWHS_Basic_Fold1.pth",
+                "--img_size", "96",
+                "--batch_size", "1", 
+                "--epochs", "2", 
+                "--experiment", "CT_MMWHS_UNETR_Basic_Fold1.exp",
+                "--training_split", "4",
+                "--device", "cuda:1",
+                "--show_verbose"
+            ]
+        },
+        {
+            "name": "Python: Train Self-Distillation",
+            "type": "python",
+            "request": "launch",
+            "program": "train_SelfDistil_Original.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "/home/share/Data/Data_MMWHS_All/CT",
+                "/home/neil/Lab_work/Medical_Image_Segmentation/Dual_Self-Distillation/trained_models/last_CT_MMWHS_SelfDistil_Original_Fold1.pth",
+                "--img_size", "96",
+                "--batch_size", "1", 
+                "--epochs", "2", 
+                "--experiment", "CT_MMWHS_UNETR_SelfDist_Original_Fold1.exp",
+                "--training_split", "4",
+                "--device", "cuda:0",
+                "--show_verbose"
+            ]
         }
     ]
 }

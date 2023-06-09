@@ -14,7 +14,3 @@ class SurfaceDistanceMetric(Metric):
 
     def __init__(self, *args: Any, dim: int = 0, target: Optional[str] = None, **kwargs: Any) -> None:
         super().__init__(_MSD(*args, reduction='none', **kwargs), dim=dim, target=target)
-
-    def reset(self) -> None:
-        self._metric_fn.reset()
-        super().reset()

@@ -2,9 +2,8 @@
 import torch
 
 def count_parameters(model):
-    total_params = 0
-    for param in model.parameters():
-        total_params += torch.numel(param)
 
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
     return total_params
     

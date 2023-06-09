@@ -6,7 +6,7 @@ import numpy as np
 from torchmanager import losses
 from torchmanager_monai import Manager, metrics
 
-from monai.metrics import DiceMetric, HausdorffDistanceMetric
+from monai.metrics import DiceMetric, HausdorffDistanceMetric, SurfaceDistanceMetric
 from monai.data.dataloader import DataLoader
 from monai.data.utils import pad_list_data_collate
 import data
@@ -23,8 +23,8 @@ modality = "CT" # for MMWHS: Please set scale_intensity_ranged = True for MMWHS 
 # modality = "multimodalMR" # for MSD_BraTS
 
 ## Set Testing Type
-# mode = "validation"
-mode = "testing"
+mode = "validation"
+# mode = "testing"
 
 ## Set Pre-trained Model Type
 # train_type = "Basic"
@@ -33,11 +33,11 @@ train_type = "Self_Distill_Original"
 # train_type = "Self_Distill_DistMaps"
 
 ## Set Pre-trained Model Architecture
-# arch = "UNETR"
-arch = "nnUnet"
+arch = "UNETR"
+# arch = "nnUnet"
 
 if dataset == "MMWHS":
-    data_dir = "/home/neil/Lab_work/Medical_Image_Segmentation/Data_MMWHS_All/" + modality  # for MMWHS
+    data_dir = "/home/share/Data/Data_MMWHS_All/" + modality  # for MMWHS
     img_size = (96,96,96) # for MMWHS
 elif dataset == "MSD_BraTS":
     data_dir = "/home/neil/Lab_work/Medical_Image_Segmentation/Data_MSD_BraTS"  # for MSD_BraTS
@@ -49,8 +49,8 @@ else:
 ## Important: Please set scale_intensity_ranged = True for CT and scale_intensity_ranged = False for MR in both data loading files challenge.py and challenge_dist_map.py. These are the preprocessing steps needed for inference (validation and testing)
 
 if train_type == "Basic":
-    best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_Basic.exp/best.model")
-    # best_model_path = os.path.join("experiments", "multimodalMR_MSD_BraTS_UNETR_Basic.exp/best.model")
+    # best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_Basic.exp/best.model")
+    best_model_path = os.path.join("experiments", "CT_MMWHS_UNETR_Basic_Fold1.exp/best.model")
 
     print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality ....")
 
@@ -61,8 +61,8 @@ elif train_type == "Deep_Super":
     print(f"{mode} with the Basic {arch} architecture with Deep Supervision on {dataset} dataset with {modality} modality ....")
 
 elif train_type == "Self_Distill_Original":
-    best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_SelfDist_Original.exp/best.model")
-    # best_model_path = os.path.join("experiments", "CT_MMWHS_nnUnet_SelfDist_Original_Decoders_Only.exp/best.model")
+    # best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_SelfDist_Original.exp/best.model")
+    best_model_path = os.path.join("experiments", "CT_MMWHS_UNETR_SelfDist_Original_Fold1.exp/best.model")
 
     print(f"{mode} with the Basic {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality ....")
 
@@ -82,7 +82,7 @@ manager = Manager.from_checkpoint(best_model_path) # type:ignore
 loss_fn: losses.MultiLosses = manager.compiled_losses # type: ignore
 
 if train_type == "Self_Distill_Original":
-    kl_loss_fn: losses.Loss = loss_fn.losses[2] # type: ignore
+    kl_loss_fn: losses.Loss = loss_fn.losses[1] # type: ignore
     # print(type(kl_loss_fn), kl_loss_fn.weight)
     print(f'KL Loss function weight is: {kl_loss_fn.weight}')
 
@@ -99,10 +99,13 @@ dice_fn = metrics.CumulativeIterationMetric(DiceMetric(include_background=False,
 
 hd_fn = metrics.CumulativeIterationMetric(HausdorffDistanceMetric(include_background=False, percentile=95.0, reduction="none", get_not_nans=False), target="out")
 
+msd_fn = metrics.CumulativeIterationMetric(SurfaceDistanceMetric(include_background=False, reduction="none", get_not_nans=False), target="out")
+
 metric_fns: dict[str, metrics.Metric] = {
-    "val_dice": dice_fn,
-    "val_hd": hd_fn
-    } 
+        "val_dice": dice_fn,
+        "val_hd": hd_fn,
+        "val_msd": msd_fn,
+        } 
 
 manager.loss_fn = None
 manager.metric_fns = metric_fns
@@ -117,7 +120,7 @@ print(f'The best Dice score on validation set occurs at {manager.current_epoch +
 if train_type == "Basic" or train_type == "Deep_Super" or train_type == "Self_Distill_Original":
     ## Testing dataset with (image,label) for regional losses
     if dataset == "MMWHS":
-        _, validation_dataset, testing_dataset, num_classes = data.load_challenge(data_dir, img_size=img_size, train_split=4, show_verbose=True)  # for MMWHS Dataset
+        _, validation_dataset, num_classes = data.load_challenge(data_dir, img_size=img_size, train_split=4, show_verbose=True)  # for MMWHS Dataset
     elif dataset == "MSD_BraTS":
         _, validation_dataset, testing_dataset, num_classes = data.load_msd(data_dir, img_size=img_size, train_split=24, show_verbose=True)  # for MSD_BraTS Dataset 
     else:
@@ -135,7 +138,8 @@ else:
 if mode == "validation":
     testing_dataset = validation_dataset
 elif mode == "testing":
-    testing_dataset = testing_dataset
+    # testing_dataset = testing_dataset
+    testing_dataset = validation_dataset
 else:
     raise ValueError("Mode should be either validation or testing.")
         
@@ -149,7 +153,7 @@ if mode == "testing": print("Results on the Test Set ...")
 print(".......")
 print(summary)
 
-## Generate Model Predictions
+'''## Generate Model Predictions
 # patient_id = 2 # Select patient for whom to generate predictions (for MMWHS-CT) - Main Paper
 patient_id = 1 # Select patient for whom to generate predictions (for MMWHS-CT)
 
@@ -219,5 +223,5 @@ for class_id in range(num_foreground_classes):
 
     # Std of Dice/HD for class_id of all samples in validation set (individual classes)
     print(f"Std of Val Dice of foreground class {class_id} across all val samples: {manager.metric_fns['val_dice'].results.squeeze(1).std(0)[class_id]}") # type:ignore
-    print(f"Std of Val HD of foreground class {class_id} across all val samples: {manager.metric_fns['val_hd'].results.squeeze(1).std(0)[class_id]}") # type:ignore
+    print(f"Std of Val HD of foreground class {class_id} across all val samples: {manager.metric_fns['val_hd'].results.squeeze(1).std(0)[class_id]}") # type:ignore'''
 

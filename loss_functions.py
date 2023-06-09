@@ -3,6 +3,7 @@ from turtle import forward
 from typing import Optional, Iterable, Callable, List, Sequence, cast, Set, Any, Union, Dict
 import warnings
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
@@ -174,11 +175,13 @@ class PixelWiseKLDiv(losses.KLDiv):
 # For KL Div Loss
 class Self_Distillation_Loss_KL(losses.MultiLosses):
 
-    def __init__(self, *args, include_background: bool = True, T: int = 1, **kwargs) -> None:
+    def __init__(self, *args, include_background: bool = True, T: int = 1, weight: float = 1, **kwargs) -> None:
 
         super().__init__(*args, **kwargs)  
         self.include_background = include_background # whether to include bkg class or not
-        self.T = T  # divided by temperature (T) to smooth logits before softmax  
+        self.T = T  # divided by temperature (T) to smooth logits before softma
+        # self.w = nn.Parameter(torch.tensor(weight, dtype=torch.float))
+        self.w = nn.parameter.Parameter(data=torch.Tensor(weight), requires_grad=True)
 
     def forward(self, input: Dict[str, Union[Sequence[torch.Tensor], torch.Tensor]], target: Any) -> torch.Tensor: # type:ignore
         
@@ -266,7 +269,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         
         # return loss
         assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
-        return loss
+        return loss * self.w
 
 
 # For L2 loss between feature maps/hints dec1_f/enc4_f [target: Teacher (T)] and feature maps (dec3_f/enc3_f,dec2_f/enc2_f) [input: Students (S)]

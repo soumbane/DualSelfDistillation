@@ -8,7 +8,7 @@ from pyrsistent import b
 from typing import Union
 
 from monai.data.dataloader import DataLoader
-from monai.metrics import DiceMetric, HausdorffDistanceMetric
+from monai.metrics import DiceMetric, HausdorffDistanceMetric, SurfaceDistanceMetric
 from monai.data.utils import pad_list_data_collate
 from monai.losses.dice import DiceCELoss
 
@@ -109,9 +109,12 @@ if __name__ == "__main__":
 
     hd_fn = metrics.CumulativeIterationMetric(HausdorffDistanceMetric(include_background=False, percentile=95.0, reduction="none", get_not_nans=False), target="out")
 
+    msd_fn = metrics.CumulativeIterationMetric(SurfaceDistanceMetric(include_background=False, reduction="none", get_not_nans=False), target="out")
+
     metric_fns: dict[str, metrics.Metric] = {
         "val_dice": dice_fn,
-        "val_hd": hd_fn
+        "val_hd": hd_fn,
+        "val_msd": msd_fn,
         } 
 
     post_labels = data.transforms.AsDiscrete(to_onehot=num_classes)
@@ -142,7 +145,7 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic.exp/best.model") # for Basic Unetr
+    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic_Fold1.exp/best.model") # for Basic Unetr
     
     # manager = Manager.from_checkpoint("experiments/multimodalMR_MSD_BraTS_UNETR_Basic.exp/best.model") # for Basic nnUnet
 
