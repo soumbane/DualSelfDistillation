@@ -27,6 +27,8 @@ from utils import count_parameters
 # initialization
 seed = 100
 random.freeze_seed(seed)
+cudnn.benchmark = False 
+cudnn.deterministic = True 
 
 
 if __name__ == "__main__":
