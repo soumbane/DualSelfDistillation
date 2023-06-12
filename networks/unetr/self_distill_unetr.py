@@ -379,8 +379,6 @@ class SelfDistilUNETR(nn.Module):
         #################################################
         # Encoders and Upsamplers for Self Distillation #
         #################################################
-
-        # For Dice CE , KL Div and L2 loss between labels and each upsampled encoder output #
         
         # Encoder 1 (Shallow Encoder)
         enc1 = self.encoder1(x_in)
@@ -388,7 +386,9 @@ class SelfDistilUNETR(nn.Module):
 
         if self.self_distillation:
             out_enc1 = self.deep_5(enc1) 
-            # print(f"Encoder 1 shape after upsampling: {out_enc1.shape}")      
+            # print(f"Encoder 1 shape after upsampling: {out_enc1.shape}")
+        else:
+            out_enc1 = None      
         
         x2 = hidden_states_out[3]
         # Encoder 2 (Shallow Encoder)
@@ -401,11 +401,15 @@ class SelfDistilUNETR(nn.Module):
 
             enc2_f = self.avgpool(enc2_f)
             # print(f"Encoder 2 feature map shape after averaging: {enc2_f.shape}")
+        else:
+            enc2_f = None
         
         if self.self_distillation:
             # Upsample Encoder 2 (Shallow Encoder)
             out_enc2 = self.deep_4(enc2) 
             # print(f"Encoder 2 shape after upsampling: {out_enc2.shape}")
+        else:
+            out_enc2 = None
 
         x3 = hidden_states_out[6]
         # Encoder 3 (Shallow Encoder)
@@ -418,11 +422,15 @@ class SelfDistilUNETR(nn.Module):
 
             enc3_f = self.avgpool(enc3_f)
             # print(f"Encoder 3 feature map shape after averaging: {enc3_f.shape}")   
+        else:
+            enc3_f = None
         
         if self.self_distillation:
             # Upsample Encoder 3 (Shallow Encoder)
             out_enc3 = self.deep_3(enc3) 
             # print(f"Encoder 3 shape after upsampling: {out_enc3.shape}")
+        else:
+            out_enc3 = None
 
         x4 = hidden_states_out[9]
         # Encoder 4 (Deepest Encoder)
@@ -434,12 +442,16 @@ class SelfDistilUNETR(nn.Module):
             # print(f"Encoder 4 feature map shape: {enc4_f.shape}") 
 
             enc4_f = self.avgpool(enc4_f)
-            # print(f"Encoder 4 feature map shape after averaging: {enc4_f.shape}")       
+            # print(f"Encoder 4 feature map shape after averaging: {enc4_f.shape}")  
+        else:
+            enc4_f = None     
         
         if self.self_distillation:
             # Upsample Encoder 4 (Deepest Encoder)
             out_enc4 = self.deep_2(enc4) 
             # print(f"Encoder 4 shape after upsampling: {out_enc4.shape}")
+        else:
+            out_enc4 = None
 
         #######################################################################################################
         #######################################################################################################
@@ -458,6 +470,8 @@ class SelfDistilUNETR(nn.Module):
             # print(f"Decoder 4 upsampled shape1: {out_dec4.shape}")
             out_dec4 = self.deep_2(out_dec4)
             # print(f"Decoder 4 upsampled shape: {out_dec4.shape}")
+        else:
+            out_dec4 = None
     
         dec3 = self.decoder5(dec4, enc4) # enc 4 is the skip connection for concatenation
         # print(f"Decoder 3 output shape before upsampling: {dec3.shape}")
@@ -467,13 +481,17 @@ class SelfDistilUNETR(nn.Module):
             # print(f"Decoder 3 feature map shape: {dec3_f.shape}") 
 
             dec3_f = self.avgpool(dec3_f)
-            # print(f"Decoder 3 feature map shape after averaging: {dec3_f.shape}")       
+            # print(f"Decoder 3 feature map shape after averaging: {dec3_f.shape}")     
+        else:
+            dec3_f = None  
 
         if self.self_distillation:
             # Upsample decoder 3 (Shallow Decoder)
             out_dec3 = self.transp_conv_dec4(dec3)
             out_dec3 = self.deep_3(out_dec3)
             # print(f"Decoder 3 upsampled shape: {out_dec3.shape}")
+        else:
+            out_dec3 = None
 
         # Decoder 2 (Shallow Decoder)
         dec2 = self.decoder4(dec3, enc3) # enc 3 is the skip connection for concatenation
@@ -485,12 +503,16 @@ class SelfDistilUNETR(nn.Module):
 
             dec2_f = self.avgpool(dec2_f)
             # print(f"Decoder 2 feature map shape after averaging: {dec2_f.shape}")
+        else:
+            dec2_f = None
 
         if self.self_distillation:
             # Upsample decoder 2 (Shallow Decoder)
             out_dec2 = self.transp_conv_dec3(dec2)
             out_dec2 = self.deep_4(out_dec2) 
-            # print(f"Decoder 2 upsampled shape: {out_dec2.shape}")        
+            # print(f"Decoder 2 upsampled shape: {out_dec2.shape}")   
+        else:
+            out_dec2 = None     
 
         # Decoder 1 (Deepest Decoder)
         dec1 = self.decoder3(dec2, enc2) # enc 2 is the skip connection for concatenation
@@ -501,7 +523,9 @@ class SelfDistilUNETR(nn.Module):
             # print(f"Decoder 1 feature map shape: {dec1_f.shape}") 
 
             dec1_f = self.avgpool(dec1_f)
-            # print(f"Decoder 1 feature map shape after averaging: {dec1_f.shape}")      
+            # print(f"Decoder 1 feature map shape after averaging: {dec1_f.shape}")
+        else:
+            dec1_f = None      
 
         if self.self_distillation:
             # Upsample decoder 1 (Deepest Decoder)
@@ -509,6 +533,8 @@ class SelfDistilUNETR(nn.Module):
             # print(f"Decoder 1 upsampled shape 1: {out_dec1.shape}")
             out_dec1 = self.deep_5(out_dec1) 
             # print(f"Decoder 1 upsampled shape: {out_dec1.shape}")
+        else:
+            out_dec1 = None
                               
         # Prepare output layers        
         out = self.decoder2(dec1, enc1) # enc 1 is the skip connection for concatenation
@@ -517,7 +543,7 @@ class SelfDistilUNETR(nn.Module):
         out_main = self.out(out) # Upper classifier
         # print(f"Main model output shape: {out_main.shape}")
                       
-        # For traditional Self Distillation (Self Distil)
+        # For Self Distillation (ONLY during training)
         if self.training and self.self_distillation:
             ## For Self Distillation
             # Encoders:out_enc4: deepest encoder and out_enc3, out_enc2, out_enc1: shallow encoders
@@ -527,16 +553,19 @@ class SelfDistilUNETR(nn.Module):
                 ## For Self Distillation with Feature Maps
                 # Encoders: enc4_f: deepest encoder and enc3_f, enc2_f: shallow encoders
                 # Decoders: dec1_f: deepest decoder and dec3_f, dec2_f: shallow decoders 
-                out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4, enc2_f, enc3_f, enc4_f, dec3_f, dec2_f, dec1_f) # Full KL Div WITH feature maps
+
+                # Full KL Div WITH feature maps
+                out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4, enc2_f, enc3_f, enc4_f, dec3_f, dec2_f, dec1_f) 
 
             else:
-                out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4) # Full KL Div WITHOUT feature maps - includes both encoders and decoders
+                # Full KL Div WITHOUT feature maps - includes both encoders and decoders
+                out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4)
             
         elif self.training and not self.self_distillation and not self.use_feature_maps:
-            # For Basic UNETR ONLY
+            # For Basic UNETR ONLY (NO Self-Distillation)
             out = out_main  
         else:
-            # For validation/testing
+            # For validation/testing (NO Self-Distillation)
             out = out_main
 
         return out
@@ -568,4 +597,7 @@ if __name__ == '__main__':
 
     x4 = unetr_with_self_distil(x1)
     print("Self Distil UNetr output shape: ", x4[1].shape)
+
+    # x5 = unetr_with_self_distil(x1)
+    # print("Self Distil UNetr output shape: ", x5[14].shape)
 
