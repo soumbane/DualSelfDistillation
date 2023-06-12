@@ -6,10 +6,10 @@ import torch.nn as nn
 from torch.nn.functional import interpolate
 
 # Relative import for final training model
-from .deepUp import DeepUp
+# from .deepUp import DeepUp
 
 # Absolute import for testing this script
-# from deepUp import DeepUp
+from deepUp import DeepUp
 
 from monai.networks.blocks.dynunet_block import UnetBasicBlock, UnetOutBlock, UnetResBlock, UnetUpBlock
 
@@ -40,79 +40,20 @@ class DynUNetSkipLayer(nn.Module):
         self.e_heads = e_heads
         self.d_heads = d_heads   
 
-        # print("------------------ DynSkipUnet for Self-Distillation/Deep Dupervision Init ----------------------------------")
-        
-        # print(f'Downsamples in DynSkip with index: {self.index}')
-        # print(self.downsample)
-
-        # print(f'Bottleneck in DynSkip with index: {self.index}')
-        # print(self.next_layer)
-        
-        # print(f'Upsamples in DynSkip with index: {self.index}')
-        # print(self.upsample)
-
-        # print(f'Heads in DynSkip with index: {self.index}')
-        # print(self.heads)
-
-        # print(f'Distill Enc Head in DynSkip with index: {self.index}')  # for self-distillation encoders
-        # print(self.enc_head)
-
-        # print(f'Distill Dec Head in DynSkip with index: {self.index}')  # for self-distillation decoders
-        # print(self.dec_head)
-
-        # raise ValueError        
-
-    def forward(self, x):
-        # print("--------------------------- DynSkipUnet for Deep Dupervision Forward -------------------------------------")
-        # print(f'Input Shape: {x.shape}')
-        # print(f'Index: {self.index}')
-        
-        # print("Downsamples: ")
-        # print(self.downsample)
-        
+    def forward(self, x):        
         downout = self.downsample(x)
-        # print(f'Downout shape: {downout.shape}')
 
         # for self-distillation
         if self.super_head is None and self.enc_head is not None and self.e_heads is not None:
-            self.e_heads[self.index] = self.enc_head(downout)  # type:ignore
-            # print(f'Encoder bottleneck input shape at index {self.index} is: {downout.shape}')
-            # print(f'Encoder bottleneck output shape at index {self.index} is: {self.e_heads[self.index].shape}')
-            # # print(self.e_heads[0].shape)
-            # # print(self.e_heads[0])
-            # print(self.enc_head)
-            # raise ValueError
-
-        # print("----------------------------------------------------------------------------------------------------------")
-
-        # print("Next Layer: ")
-        # print(self.next_layer)    
-
-        # print("----------------------------------------------------------------------------------------------------------")   
+            self.e_heads[self.index] = self.enc_head(downout)  
 
         nextout = self.next_layer(downout)
-        
-        # print(f'Nextout shape: {nextout.shape}')
-
-        # print(f'Index after nextout is: {self.index}')
 
         # for self-distillation
         if self.super_head is None and self.dec_head is not None and self.d_heads is not None:
-            self.d_heads[self.index] = self.dec_head(nextout)  # type:ignore
-            # print(f'Decoder bottleneck input shape at index {self.index} is: {nextout.shape}')
-            # print(f'Decoder bottleneck output shape at index {self.index} is: {self.d_heads[self.index].shape}')
-            # print(self.dec_head)
-            # print(self.d_heads[self.index].shape)
-            # raise ValueError
-        
+            self.d_heads[self.index] = self.dec_head(nextout)        
 
         upout = self.upsample(nextout, downout)
-
-        # print(f'Upout shape: {upout.shape}')
-
-        # print("----------------------------------------------------------------------------------------------------------")
-
-        # raise ValueError
 
         # for deep supervision
         if self.super_head is not None and self.enc_head is None and self.dec_head is None and self.heads is not None and self.index > 0:
@@ -160,6 +101,7 @@ class SelfDistilDynUNet(nn.Module):
         deep_supr_num: int = 1,
         self_distillation: bool = False,
         self_distillation_num: int = 4,
+        dataset: str = "MMWHS",
         res_block: bool = False,
         trans_bias: bool = False,
     ):
@@ -199,87 +141,107 @@ class SelfDistilDynUNet(nn.Module):
         # Upsample blocks for Self Distillation #
         #########################################
 
-        self.deep_1 = DeepUp(
-        spatial_dims = 3,
-        in_channels = 320,
-        out_channels = self.out_channels,
-        scale_factor = 16
-        ) # for MMWHS
+        if self_distillation:
+            if dataset == "MMWHS":
+                self.deep_1 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 320,
+                out_channels = self.out_channels,
+                scale_factor = 16
+                ) 
+                
+                self.deep_2 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 256,
+                out_channels = self.out_channels,
+                scale_factor = 8
+                ) 
+
+                self.deep_3 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 128,
+                out_channels = self.out_channels,
+                scale_factor = 4
+                ) 
+
+                self.deep_4 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 64,
+                out_channels = self.out_channels,
+                scale_factor = 2
+                )
+
+                self.deep_5 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 32,
+                out_channels = self.out_channels,
+                scale_factor = 1
+                ) 
+
+            elif dataset == "MSD-BraTS":
+            
+                self.deep_2 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 256,
+                out_channels = self.out_channels,
+                scale_factor = 16
+                ) # for MSD-BraTS
+
+                
+                self.deep_3 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 128,
+                out_channels = self.out_channels,
+                scale_factor = 8
+                ) # for MSD-BraTS
+
+                
+                self.deep_4 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 64,
+                out_channels = self.out_channels,
+                scale_factor = 4
+                ) # for MSD-BraTS
+
+                    
+                self.deep_5 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 32,
+                out_channels = self.out_channels,
+                scale_factor = 2
+                ) # for MSD-BraTS
+                
+                self.deep_6 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 16,
+                out_channels = self.out_channels,
+                scale_factor = 1
+                ) # for MSD-BraTS
         
-        self.deep_2 = DeepUp(
-        spatial_dims = 3,
-        in_channels = 256,
-        out_channels = self.out_channels,
-        scale_factor = 8
-        ) # for MMWHS
-        # self.deep_2 = DeepUp(
-        # spatial_dims = 3,
-        # in_channels = 256,
-        # out_channels = self.out_channels,
-        # scale_factor = 16
-        # ) # for MSD-BraTS
-
-        self.deep_3 = DeepUp(
-        spatial_dims = 3,
-        in_channels = 128,
-        out_channels = self.out_channels,
-        scale_factor = 4
-        ) # for MMWHS
-        # self.deep_3 = DeepUp(
-        # spatial_dims = 3,
-        # in_channels = 128,
-        # out_channels = self.out_channels,
-        # scale_factor = 8
-        # ) # for MSD-BraTS
-
-        self.deep_4 = DeepUp(
-        spatial_dims = 3,
-        in_channels = 64,
-        out_channels = self.out_channels,
-        scale_factor = 2
-        ) # for MMWHS
-        # self.deep_4 = DeepUp(
-        # spatial_dims = 3,
-        # in_channels = 64,
-        # out_channels = self.out_channels,
-        # scale_factor = 4
-        # ) # for MSD-BraTS
-
-        self.deep_5 = DeepUp(
-        spatial_dims = 3,
-        in_channels = 32,
-        out_channels = self.out_channels,
-        scale_factor = 1
-        ) # for MMWHS        
-        # self.deep_5 = DeepUp(
-        # spatial_dims = 3,
-        # in_channels = 32,
-        # out_channels = self.out_channels,
-        # scale_factor = 2
-        # ) # for MSD-BraTS
-        
-        # self.deep_6 = DeepUp(
-        # spatial_dims = 3,
-        # in_channels = 16,
-        # out_channels = self.out_channels,
-        # scale_factor = 1
-        # ) # for MSD-BraTS
+            else:
+                raise NotImplementedError(f"Upsample modules not implemented for {dataset} dataset.")
 
 
-        # The following is required for proposed self-distillation along with deep supervision
+        # The following is required for proposed self-distillation along with deep supervision        
         self.self_distillation = self_distillation
         self.self_distillation_num = self_distillation_num
         # initialize the typed list of supervision head outputs so that Torchscript can recognize what's going on
         self.e_heads: List[torch.Tensor] = [torch.rand(1)] * self.self_distillation_num  # Encoder Heads
         self.d_heads: List[torch.Tensor] = [torch.rand(1)] * self.self_distillation_num  # Decoder Heads
-        if self.self_distillation:
-            # for MMWHS
-            self.self_distillation_enc_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2])
-            self.self_distillation_dec_heads = nn.ModuleList([self.deep_4,self.deep_3,self.deep_2,self.deep_1])
+        
+        if self.self_distillation: 
+            if dataset == "MMWHS":
+                # for MMWHS
+                self.self_distillation_enc_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2])
+                self.self_distillation_dec_heads = nn.ModuleList([self.deep_4,self.deep_3,self.deep_2,self.deep_1])
 
-            # for MSD-BraTS
-            # self.self_distillation_enc_heads = nn.ModuleList([self.deep_6,self.deep_5,self.deep_4,self.deep_3])
-            # self.self_distillation_dec_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2])
+            elif self.self_distillation and dataset == "MSD-BraTS":
+                # for MSD-BraTS
+                self.self_distillation_enc_heads = nn.ModuleList([self.deep_6,self.deep_5,self.deep_4,self.deep_3])
+                self.self_distillation_dec_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2])
+        
+            else:
+                raise NotImplementedError(f"Upsample modules not implemented for {dataset} dataset.")
 
         self.apply(self.initialize_weights)
         self.check_kernel_stride()
@@ -293,13 +255,6 @@ class SelfDistilDynUNet(nn.Module):
             shouldn't be associated with a supervision head.
             """
 
-            # # print(f'Not using deep supervision: index {index}')
-            # # print(f'Using deep supervision: index {index}')
-            # print(f'Using Self-Distillation: index {index}')
-            # print(len(downsamples))
-
-            # print(len(upsamples))
-
             if len(downsamples) != len(upsamples):
                 raise ValueError(f"{len(downsamples)} != {len(upsamples)}")
 
@@ -307,55 +262,25 @@ class SelfDistilDynUNet(nn.Module):
                 return bottleneck
 
             if superheads is None and distil_enc_heads is None and distil_dec_heads is None:
-                # print("Neither Deep supervision nor self-distillation is present (Basic Model) ...")
-                next_layer = create_skips(1 + index, downsamples[1:], upsamples[1:], bottleneck)
-                # print("-----------------------------------------------------------------------------")
-                # print("--------------- Without Deep Supervision or self-distillation ---------------")
-                # print(f'Index is: {index}')
-                
+                next_layer = create_skips(1 + index, downsamples[1:], upsamples[1:], bottleneck)                
                 return DynUNetSkipLayer(index, downsample=downsamples[0], upsample=upsamples[0], next_layer=next_layer)
 
             if superheads is not None and distil_enc_heads is None and distil_dec_heads is None:
-                # print("Deep supervision is present and self-distillation is not present ...")
 
                 super_head_flag = False
                 if index == 0:  # don't associate a supervision head with self.input_block
                     rest_heads = superheads
-                    # print(f'Index: {index}')
-                    # print("Rest Heads: ")
-                    # print(rest_heads)
                     
                 else:
                     if len(superheads) > 0:
                         super_head_flag = True
                         rest_heads = superheads[1:]
-                        # print(f'Index: {index}')
-                        # print("Rest Heads: ")
-                        # print(rest_heads)
                     else:                        
                         rest_heads = nn.ModuleList()
-                        # print(f'Index: {index}')
-                        # print("Rest Heads: ")
-                        # print(rest_heads)
 
                 # create the next layer down, this will stop at the bottleneck layer
                 next_layer = create_skips(1 + index, downsamples[1:], upsamples[1:], bottleneck, superheads=rest_heads)
-
-                # print("-----------------------------------------------------------------------------")
-                # print("------------------------ WITH Deep Supervision ------------------------------")
-                # print(f'Index is: {index}')
                 
-                # print("Next (Bottleneck) Layer: ")
-                # print(next_layer)
-
-                # print("Downsamples: ")
-                # print(downsamples)
-
-                # print("Upsamples: ")
-                # print(upsamples)
-
-                # raise ValueError
-
                 if super_head_flag:
                     return DynUNetSkipLayer(
                         index,
@@ -368,44 +293,17 @@ class SelfDistilDynUNet(nn.Module):
 
                 return DynUNetSkipLayer(index, downsample=downsamples[0], upsample=upsamples[0], next_layer=next_layer)
 
-            if superheads is None and distil_enc_heads is not None and distil_dec_heads is not None:
-                # print("Self-distillation is present and Deep supervision is a subset of self-distillation ....")                
-                
+            if superheads is None and distil_enc_heads is not None and distil_dec_heads is not None:                  
                 if len(distil_enc_heads) > 0 or len(distil_dec_heads) > 0:                  
                     rest_enc_heads = distil_enc_heads
                     rest_dec_heads = distil_dec_heads
-                    # print(f'Index: {index}')
-                    # print("Rest Encoder Heads: ")
-                    # print(rest_enc_heads)
-                    # print("Rest Decoder Heads: ")
-                    # print(rest_dec_heads)
-                    # raise ValueError
                 
                 else:
-                    # print(f'Index: {index}')
                     rest_enc_heads = nn.ModuleList()
-                    rest_dec_heads = nn.ModuleList()
-                    
+                    rest_dec_heads = nn.ModuleList()                    
 
                 # create the next layer down, this will stop at the bottleneck layer
                 next_layer = create_skips(1 + index, downsamples[1:], upsamples[1:], bottleneck, superheads=None, distil_enc_heads=rest_enc_heads, distil_dec_heads=rest_dec_heads)
-
-                # print("-----------------------------------------------------------------------------")
-                # print("------------------------ WITH Self-Distillation -----------------------------")
-                # print(f'Index is: {index}')
-                
-                # print("Next (Bottleneck) Layer: ")
-                # print(next_layer)
-
-                # print("Downsamples: ")
-                # print(downsamples)
-
-                # print("Upsamples: ")
-                # print(upsamples)
-
-                # print(f'Distil-Encoder Heads: {distil_enc_heads}')
-                # print(f'Distil-Decoder Heads: {distil_dec_heads}')
-                # raise ValueError
 
                 
                 return DynUNetSkipLayer(
@@ -422,17 +320,12 @@ class SelfDistilDynUNet(nn.Module):
                 )
 
 
-        if not self.deep_supervision and not self.self_distillation:
-            # print(f'Not using deep supervision or self-distillation-starting ....')            
+        if not self.deep_supervision and not self.self_distillation:          
             self.skip_layers = create_skips(
                 0, [self.input_block] + list(self.downsamples), self.upsamples[::-1], self.bottleneck # type:ignore
             )
-            # print("Skip Layers: ")
-            # print(self.skip_layers)
-            # print("Finished creating skip layers ...")
-            # raise ValueError
-        elif self.deep_supervision and not self.self_distillation:
-            # print(f'Using deep supervision-starting ....')    
+    
+        elif self.deep_supervision and not self.self_distillation:    
             self.skip_layers = create_skips(
                 0,
                 [self.input_block] + list(self.downsamples),
@@ -440,15 +333,8 @@ class SelfDistilDynUNet(nn.Module):
                 self.bottleneck,
                 superheads=self.deep_supervision_heads,
             )
-            # print("------------------------------------------------------------------------------------------------")
-            # print("--------------------------------------- Completed ----------------------------------------------")
-            # print("Skip Layers with Deep-Supervision: ")
-            # print(self.skip_layers)
-            # print("Finished creating skip layers for Deep-Supervision ...")
-            # raise ValueError
 
-        elif self.self_distillation and not self.deep_supervision:
-            # print(f'Using Self-Distillation-starting ....')   
+        elif self.self_distillation and not self.deep_supervision:  
             self.skip_layers = create_skips(
                 0,
                 [self.input_block] + list(self.downsamples),
@@ -459,12 +345,6 @@ class SelfDistilDynUNet(nn.Module):
                 distil_dec_heads=self.self_distillation_dec_heads,
             )
 
-            # print("------------------------------------------------------------------------------------------------")
-            # print("--------------------------------------- Completed ----------------------------------------------")
-            # print("Skip Layers with Self-Distillation: ")
-            # print(self.skip_layers)
-            # print("Finished creating skip layers for Self-Distillation ...")
-            # raise ValueError
         else:
             raise NotImplementedError("Deep Supervision and Self-Distillation cannot be the True at the same time. Please select one as True and the other as False.")
 
@@ -500,16 +380,10 @@ class SelfDistilDynUNet(nn.Module):
         else:
             self.filters = filters[: len(self.strides)]
 
-    def forward(self, x):
-        # print(f'Shape of x: {x.shape}')
-        # print(f'Shape of filters: {self.filters}')   
-        
+    def forward(self, x):        
         out_layers = self.skip_layers(x)  # type:ignore
-        # print(f'nnUNet Layers output shape: {out_layers.shape}')        
 
         out_main = self.output_block(out_layers)
-        # print(f'nnUNet Main output shape: {out_main.shape}')
-        # raise ValueError
 
         if self.training and self.deep_supervision:
             out_all = [out_layers]
@@ -524,10 +398,6 @@ class SelfDistilDynUNet(nn.Module):
             out_enc3 = self.e_heads[2]  # Shallow Encoder
             out_enc2 = self.e_heads[1]  # Shallow Encoder
             out_enc1 = self.e_heads[0]  # Shallow Encoder
-            # print(self.e_heads[0].shape)
-            # print(self.e_heads[1].shape)
-            # print(self.e_heads[2].shape)
-            # print(self.e_heads[3].shape)
 
             # nnUNet Decoder Bottleneck Outputs
             out_dec1 = self.d_heads[0]  # Deepest Decoder 
@@ -535,18 +405,10 @@ class SelfDistilDynUNet(nn.Module):
             out_dec3 = self.d_heads[2]  # Shallow Decoder
             out_dec4 = self.d_heads[3]  # Shallow Decoder
 
-            # print(self.d_heads[0].shape)
-            # print(self.d_heads[1].shape)
-            # print(self.d_heads[2].shape)
-            # print(self.d_heads[3].shape)
-            # raise ValueError
-
             # For Deep Supervision ONLY - currently done for MMWHS CT with nnUnet
             # out = (out_main, out_dec3, out_dec2, out_dec1) 
             
-            # For nnUNet with Deep Super, Self-Distill
-            # out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1) # Half KL Div WITHOUT feature maps - includes decoders only
-
+            # For nnUNet with Self-Distillation
             out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4) # Full KL Div WITHOUT feature maps - includes both encoders and decoders (Also works with encoders only - just do not add the decoder KL divergence loss for encoders only)
 
         else: # For Basic nnUNet ONLY and validation mode
@@ -655,13 +517,13 @@ if __name__ == '__main__':
 
     kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
     strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
-    # filters = [32,64,128,256,320]  # originally used
-    filters = [16,32,64,128,256] # try this
+    filters = [32,64,128,256,320]  # originally used for MMWHS
+    # filters = [16,32,64,128,256] # try this
 
     nnunet_with_self_distil = SelfDistilDynUNet(
         spatial_dims = 3,
-        in_channels = 3,
-        out_channels = 4,
+        in_channels = 1,
+        out_channels = 8,
         kernel_size = kernel_size,
         strides = strides,
         upsample_kernel_size = strides[1:],
@@ -671,11 +533,19 @@ if __name__ == '__main__':
         deep_supr_num=3,
         self_distillation=True,
         self_distillation_num=4,
+        dataset="MMWHS",
         res_block=True,
         )
 
-    x1 = torch.rand((1, 3, 96, 96, 96)) # (B,num_ch,x,y,z)
+    ## Count model parameters
+    total_params = sum(p.numel() for p in nnunet_with_self_distil.parameters() if p.requires_grad)
+    print(f'The total number of model parameter is: {total_params}')
+    
+    x1 = torch.rand((1, 1, 96, 96, 96)) # (B,num_ch,x,y,z)
     print("Self Distil nnUNet input shape: ", x1.shape)
 
     x3 = nnunet_with_self_distil(x1)
     print("Self Distil nnUNet output shape: ", x3[5].shape)
+
+    # x3 = nnunet_with_self_distil(x1)
+    # print("Self Distil nnUNet output shape: ", x3.shape)
