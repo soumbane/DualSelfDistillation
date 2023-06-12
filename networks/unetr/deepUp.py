@@ -6,12 +6,11 @@ import torch.nn as nn
 
 from monai.networks.blocks.dynunet_block import UnetBasicBlock, UnetResBlock, get_conv_layer, UnetOutBlock
 from monai.networks.blocks import UpSample
-from monai.utils import UpsampleMode
+from monai.utils import InterpolateMode, UpsampleMode
 
 class DeepUp(nn.Module):
     """
-    An upsampling module that can be used for UNETR: "Hatamizadeh et al.,
-    UNETR: Transformers for 3D Medical Image Segmentation <https://arxiv.org/abs/2103.10504>"
+    An upsampling module that can be used for UNETR/nnUNet/SwinUNETR"
     """
 
     def __init__(
@@ -19,7 +18,9 @@ class DeepUp(nn.Module):
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
-        scale_factor: int
+        scale_factor: int, 
+        mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
+        interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR
     ) -> None:
         """
         Args:
@@ -27,6 +28,8 @@ class DeepUp(nn.Module):
             in_channels: number of input channels.
             out_channels: number of output channels.
             scale_factor: scale by which upsampling is needed
+            mode: whether to use trainable DECONV or NONTRAINABLE mode for UpsampleMode,
+            interp_mode: The type of interpolation (Linear/Bilinear/TriLinear) for NONTRAINABLE UpsampleMode
         """
 
         super().__init__()
@@ -42,7 +45,8 @@ class DeepUp(nn.Module):
             in_channels=out_channels,
             out_channels=out_channels,
             scale_factor=scale_factor,
-            mode=UpsampleMode.DECONV,
+            mode=mode,
+            interp_mode=interp_mode,
             bias=True,
             apply_pad_pool=True,
         )
@@ -56,12 +60,11 @@ if __name__ == '__main__':
     block_connector = DeepUp(
         spatial_dims = 3,
         in_channels = 1,
-        out_channels = 8,
-        kernel_size = 1, # type:ignore
-        upsample_kernel_size = 2, # type:ignore
-        norm_name = 'instance', # type:ignore
-        res_block = False # type:ignore
-        )  # type:ignore
+        out_channels = 8, 
+        scale_factor=2, 
+        mode=UpsampleMode.NONTRAINABLE, 
+        interp_mode=InterpolateMode.BILINEAR
+        )  
 
     x1 = torch.rand((1, 1, 96, 96, 96)) # (B,in_ch,x,y,z)
     print("Deep Upsampling block input shape: ", x1.shape)
