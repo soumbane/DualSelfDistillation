@@ -85,6 +85,7 @@ if __name__ == "__main__":
     #     deep_supr_num=3,
     #     self_distillation=True,
     #     self_distillation_num=4,
+    #     dataset = "MMWHS",
     #     res_block=True,
     #     )
     
