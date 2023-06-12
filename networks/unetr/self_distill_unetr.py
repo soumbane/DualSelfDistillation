@@ -12,13 +12,13 @@ from monai.networks.nets.vit import ViT
 from monai.utils import ensure_tuple_rep
 
 from monai.networks.blocks import UpSample
-from monai.utils import UpsampleMode
+from monai.utils import UpsampleMode, InterpolateMode
 
 # Relative import for final training model
-from .deepUp import DeepUp
+# from .deepUp import DeepUp
 
 # Absolute import for testing this script
-# from deepUp import DeepUp
+from deepUp import DeepUp
 
 class SelfDistilUNETR(nn.Module):
     """
@@ -31,6 +31,10 @@ class SelfDistilUNETR(nn.Module):
         in_channels: int,
         out_channels: int,
         img_size: Union[Sequence[int], int],
+        self_distillation: bool = False,
+        mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
+        interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
+        use_feature_maps: bool = False,
         feature_size: int = 16, # 16 used for MSD-BraTS and MMWHS(previous)
         hidden_size: int = 768,
         mlp_dim: int = 3072,
@@ -47,6 +51,9 @@ class SelfDistilUNETR(nn.Module):
             in_channels: dimension of input channels.
             out_channels: dimension of output channels.
             img_size: dimension of input image.
+            self_distillation: whether to use use self-distillation or not in UNETR architecture,
+            mode: whether to use trainable DECONV or NONTRAINABLE mode for UpsampleMode,
+            interp_mode: The type of interpolation (Linear/Bilinear/TriLinear) for NONTRAINABLE UpsampleMode,
             feature_size: dimension of network feature size.
             hidden_size: dimension of hidden layer.
             mlp_dim: dimension of feedforward layer.
@@ -76,6 +83,12 @@ class SelfDistilUNETR(nn.Module):
 
         self.num_layers = 12
         img_size = ensure_tuple_rep(img_size, spatial_dims)
+        
+        self.self_distillation = self_distillation
+        self.use_feature_maps = use_feature_maps
+        if self.use_feature_maps:
+            assert self.self_distillation == True, f"The self-distillation has to be `True` when using feature-map distillation, got self_distillation as {self.self_distillation}."
+
         self.patch_size = ensure_tuple_rep(16, spatial_dims)
         self.feat_size = tuple(img_d // p_d for img_d, p_d in zip(img_size, self.patch_size))
         self.hidden_size = hidden_size
@@ -186,146 +199,164 @@ class SelfDistilUNETR(nn.Module):
         #######################################################
         # ONLY Deconv Block of Decoders for Self-Distillation #
         #######################################################
-        upsample_kernel_size = 2
-        upsample_stride = upsample_kernel_size
+        if self_distillation:
+            upsample_kernel_size = 2
+            upsample_stride = upsample_kernel_size
 
-        self.transp_conv_dec5 = get_conv_layer(
-            spatial_dims=spatial_dims,
-            in_channels=hidden_size,
-            out_channels=feature_size * 8,
-            kernel_size=upsample_kernel_size,
-            stride=upsample_stride,
-            conv_only=True,
-            is_transposed=True,
-        )
+            self.transp_conv_dec5 = get_conv_layer(
+                spatial_dims=spatial_dims,
+                in_channels=hidden_size,
+                out_channels=feature_size * 8,
+                kernel_size=upsample_kernel_size,
+                stride=upsample_stride,
+                conv_only=True,
+                is_transposed=True,
+            )
 
-        self.transp_conv_dec4 = get_conv_layer(
-            spatial_dims=spatial_dims,
-            in_channels=feature_size * 8,
-            out_channels=feature_size * 4,
-            kernel_size=upsample_kernel_size,
-            stride=upsample_stride,
-            conv_only=True,
-            is_transposed=True,
-        )
+            self.transp_conv_dec4 = get_conv_layer(
+                spatial_dims=spatial_dims,
+                in_channels=feature_size * 8,
+                out_channels=feature_size * 4,
+                kernel_size=upsample_kernel_size,
+                stride=upsample_stride,
+                conv_only=True,
+                is_transposed=True,
+            )
 
-        self.transp_conv_dec3 = get_conv_layer(
-            spatial_dims=spatial_dims,
-            in_channels=feature_size * 4,
-            out_channels=feature_size * 2,
-            kernel_size=upsample_kernel_size,
-            stride=upsample_stride,
-            conv_only=True,
-            is_transposed=True,
-        )
+            self.transp_conv_dec3 = get_conv_layer(
+                spatial_dims=spatial_dims,
+                in_channels=feature_size * 4,
+                out_channels=feature_size * 2,
+                kernel_size=upsample_kernel_size,
+                stride=upsample_stride,
+                conv_only=True,
+                is_transposed=True,
+            )
 
-        self.transp_conv_dec2 = get_conv_layer(
-            spatial_dims=spatial_dims,
-            in_channels=feature_size * 2,
-            out_channels=feature_size,
-            kernel_size=upsample_kernel_size,
-            stride=upsample_stride,
-            conv_only=True,
-            is_transposed=True,
-        )
+            self.transp_conv_dec2 = get_conv_layer(
+                spatial_dims=spatial_dims,
+                in_channels=feature_size * 2,
+                out_channels=feature_size,
+                kernel_size=upsample_kernel_size,
+                stride=upsample_stride,
+                conv_only=True,
+                is_transposed=True,
+            )
 
         #########################################
         # Upsample blocks for Self Distillation #
         #########################################
 
-        self.deep_1 = DeepUp(
-        spatial_dims = 3,
-        in_channels = feature_size * 16,
-        out_channels = out_channels,
-        scale_factor = 16
-        )
-        
-        self.deep_2 = DeepUp(
-        spatial_dims = 3,
-        in_channels = feature_size * 8,
-        out_channels = out_channels,
-        scale_factor = 8
-        )
+        if self_distillation:
+            self.deep_1 = DeepUp(
+            spatial_dims = 3,
+            in_channels = feature_size * 16,
+            out_channels = out_channels,
+            scale_factor = 16,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
+            
+            self.deep_2 = DeepUp(
+            spatial_dims = 3,
+            in_channels = feature_size * 8,
+            out_channels = out_channels,
+            scale_factor = 8,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
 
-        self.deep_3 = DeepUp(
-        spatial_dims = 3,
-        in_channels = feature_size * 4,
-        out_channels = out_channels,
-        scale_factor = 4
-        )
+            self.deep_3 = DeepUp(
+            spatial_dims = 3,
+            in_channels = feature_size * 4,
+            out_channels = out_channels,
+            scale_factor = 4,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
 
-        self.deep_4 = DeepUp(
-        spatial_dims = 3,
-        in_channels = feature_size * 2,
-        out_channels = out_channels,
-        scale_factor = 2
-        )
+            self.deep_4 = DeepUp(
+            spatial_dims = 3,
+            in_channels = feature_size * 2,
+            out_channels = out_channels,
+            scale_factor = 2,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
 
-        self.deep_5 = DeepUp(
-        spatial_dims = 3,
-        in_channels = feature_size,
-        out_channels = out_channels,
-        scale_factor = 1
-        )
+            self.deep_5 = DeepUp(
+            spatial_dims = 3,
+            in_channels = feature_size,
+            out_channels = out_channels,
+            scale_factor = 1,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
 
         ###############################################
         # Upsample blocks (Required for Feature Maps) #
         ###############################################
-        self.transp_conv_1 = UpSample(
-            spatial_dims,
-            in_channels=feature_size,
-            out_channels=128,
-            scale_factor=1,
-            mode=UpsampleMode.DECONV,
-            bias=True,
-            apply_pad_pool=True,
-        )
+        if self_distillation and use_feature_maps:
+            self.transp_conv_1 = UpSample(
+                spatial_dims,
+                in_channels=feature_size,
+                out_channels=128,
+                scale_factor=1,
+                mode=mode, 
+                interp_mode=interp_mode,
+                bias=True,
+                apply_pad_pool=True,
+            )
 
-        self.transp_conv_2 = UpSample(
-            spatial_dims,
-            in_channels=feature_size*2,
-            out_channels=128,
-            scale_factor=2,
-            mode=UpsampleMode.DECONV,
-            bias=True,
-            apply_pad_pool=True,
-        )
+            self.transp_conv_2 = UpSample(
+                spatial_dims,
+                in_channels=feature_size*2,
+                out_channels=128,
+                scale_factor=2,
+                mode=mode, 
+                interp_mode=interp_mode,
+                bias=True,
+                apply_pad_pool=True,
+            )
 
-        self.transp_conv_3 = UpSample(
-            spatial_dims,
-            in_channels=feature_size*4,
-            out_channels=128,
-            scale_factor=4,
-            mode=UpsampleMode.DECONV,
-            bias=True,
-            apply_pad_pool=True,
-        )
+            self.transp_conv_3 = UpSample(
+                spatial_dims,
+                in_channels=feature_size*4,
+                out_channels=128,
+                scale_factor=4,
+                mode=mode, 
+                interp_mode=interp_mode,
+                bias=True,
+                apply_pad_pool=True,
+            )
 
-        self.transp_conv_4 = UpSample(
-            spatial_dims,
-            in_channels=feature_size*8,
-            out_channels=128,
-            scale_factor=8,
-            mode=UpsampleMode.DECONV,
-            bias=True,
-            apply_pad_pool=True,
-        )
+            self.transp_conv_4 = UpSample(
+                spatial_dims,
+                in_channels=feature_size*8,
+                out_channels=128,
+                scale_factor=8,
+                mode=mode, 
+                interp_mode=interp_mode,
+                bias=True,
+                apply_pad_pool=True,
+            )
 
-        # The following is required for dec4 - the shallowest decoder
-        self.transp_conv_5 = UpSample(
-            spatial_dims,
-            in_channels=768,
-            out_channels=128,
-            scale_factor=16,
-            mode=UpsampleMode.DECONV,
-            bias=True,
-            apply_pad_pool=True,
-        )
+            # The following is required for dec4 - the shallowest decoder
+            self.transp_conv_5 = UpSample(
+                spatial_dims,
+                in_channels=768,
+                out_channels=128,
+                scale_factor=16,
+                mode=mode, 
+                interp_mode=interp_mode,
+                bias=True,
+                apply_pad_pool=True,
+            )
 
-        ###############################################
-        # Average blocks (Required for Feature Maps) #
-        ###############################################
-        self.avgpool = nn.AdaptiveAvgPool3d((1,1,1))
+            ###############################################
+            # Average blocks (Required for Feature Maps) #
+            ###############################################
+            self.avgpool = nn.AdaptiveAvgPool3d((1,1,1))
 
         #############
         # Out block #
@@ -355,60 +386,60 @@ class SelfDistilUNETR(nn.Module):
         enc1 = self.encoder1(x_in)
         # print(f"Encoder 1 shape before upsampling: {enc1.shape}")  
 
-        out_enc1 = self.deep_5(enc1)
-        # print(f"Encoder 1 shape after upsampling: {out_enc1.shape}")  
-
-        # Feature Maps for shallow encoders NOT required
-        '''enc1_f = self.transp_conv_1(enc1)   
-        # print(f"Encoder 1 feature map shape: {enc1_f.shape}") 
-
-        enc1_f = self.avgpool(enc1_f)
-        # print(f"Encoder 1 feature map shape after averaging: {enc1_f.shape}")'''       
+        if self.self_distillation:
+            out_enc1 = self.deep_5(enc1) 
+            # print(f"Encoder 1 shape after upsampling: {out_enc1.shape}")      
         
         x2 = hidden_states_out[3]
         # Encoder 2 (Shallow Encoder)
         enc2 = self.encoder2(self.proj_feat(x2))
         # print(f"Encoder 2 shape before upsampling: {enc2.shape}") 
         
-        # enc2_f = self.transp_conv_2(enc2)   
-        # # print(f"Encoder 2 feature map shape: {enc2_f.shape}") 
+        if self.self_distillation and self.use_feature_maps:
+            enc2_f = self.transp_conv_2(enc2)   
+            # print(f"Encoder 2 feature map shape: {enc2_f.shape}") 
 
-        # enc2_f = self.avgpool(enc2_f)
-        # # print(f"Encoder 2 feature map shape after averaging: {enc2_f.shape}")
+            enc2_f = self.avgpool(enc2_f)
+            # print(f"Encoder 2 feature map shape after averaging: {enc2_f.shape}")
         
-        # Upsample Encoder 2 (Shallow Encoder)
-        out_enc2 = self.deep_4(enc2) 
-        # print(f"Encoder 2 shape after upsampling: {out_enc2.shape}")
+        if self.self_distillation:
+            # Upsample Encoder 2 (Shallow Encoder)
+            out_enc2 = self.deep_4(enc2) 
+            # print(f"Encoder 2 shape after upsampling: {out_enc2.shape}")
 
         x3 = hidden_states_out[6]
         # Encoder 3 (Shallow Encoder)
         enc3 = self.encoder3(self.proj_feat(x3))
         # print(f"Encoder 3 shape before upsampling: {enc3.shape}")  
 
-        # enc3_f = self.transp_conv_3(enc3)   
-        # # print(f"Encoder 3 feature map shape: {enc3_f.shape}") 
+        if self.self_distillation and self.use_feature_maps:
+            enc3_f = self.transp_conv_3(enc3)   
+            # print(f"Encoder 3 feature map shape: {enc3_f.shape}") 
 
-        # enc3_f = self.avgpool(enc3_f)
-        # # print(f"Encoder 3 feature map shape after averaging: {enc3_f.shape}")   
+            enc3_f = self.avgpool(enc3_f)
+            # print(f"Encoder 3 feature map shape after averaging: {enc3_f.shape}")   
         
-        # Upsample Encoder 3 (Shallow Encoder)
-        out_enc3 = self.deep_3(enc3) 
-        # print(f"Encoder 3 shape after upsampling: {out_enc3.shape}")
+        if self.self_distillation:
+            # Upsample Encoder 3 (Shallow Encoder)
+            out_enc3 = self.deep_3(enc3) 
+            # print(f"Encoder 3 shape after upsampling: {out_enc3.shape}")
 
         x4 = hidden_states_out[9]
         # Encoder 4 (Deepest Encoder)
         enc4 = self.encoder4(self.proj_feat(x4))
         # print(f"Encoder 4 shape before upsampling: {enc4.shape}") 
 
-        # enc4_f = self.transp_conv_4(enc4)   
-        # # print(f"Encoder 4 feature map shape: {enc4_f.shape}") 
+        if self.self_distillation and self.use_feature_maps:
+            enc4_f = self.transp_conv_4(enc4)   
+            # print(f"Encoder 4 feature map shape: {enc4_f.shape}") 
 
-        # enc4_f = self.avgpool(enc4_f)
-        # # print(f"Encoder 4 feature map shape after averaging: {enc4_f.shape}")       
+            enc4_f = self.avgpool(enc4_f)
+            # print(f"Encoder 4 feature map shape after averaging: {enc4_f.shape}")       
         
-        # Upsample Encoder 4 (Deepest Encoder)
-        out_enc4 = self.deep_2(enc4) 
-        # print(f"Encoder 4 shape after upsampling: {out_enc4.shape}")
+        if self.self_distillation:
+            # Upsample Encoder 4 (Deepest Encoder)
+            out_enc4 = self.deep_2(enc4) 
+            # print(f"Encoder 4 shape after upsampling: {out_enc4.shape}")
 
         #######################################################################################################
         #######################################################################################################
@@ -419,66 +450,65 @@ class SelfDistilUNETR(nn.Module):
 
         # Decoder 3 (Shallow Decoder)
         dec4 = self.proj_feat(x)
-
         # print(f"Decoder 4 shape: {dec4.shape}")
 
-        # Feature Maps for shallow decoders NOT required
-        '''dec4_f = self.transp_conv_5(dec4)
-        # print(f"Decoder 4 feature map shape: {dec4_f.shape}")
-
-        dec4_f = self.avgpool(dec4_f)
-        # print(f"Decoder 4 feature map shape after averaging: {dec4_f.shape}")'''
-
-        # Upsample decoder 4
-        out_dec4 = self.transp_conv_dec5(dec4)
-        # print(f"Decoder 4 upsampled shape1: {out_dec4.shape}")
-        out_dec4 = self.deep_2(out_dec4)
-        # print(f"Decoder 4 upsampled shape: {out_dec4.shape}")
+        if self.self_distillation:
+            # Upsample decoder 4
+            out_dec4 = self.transp_conv_dec5(dec4)
+            # print(f"Decoder 4 upsampled shape1: {out_dec4.shape}")
+            out_dec4 = self.deep_2(out_dec4)
+            # print(f"Decoder 4 upsampled shape: {out_dec4.shape}")
     
         dec3 = self.decoder5(dec4, enc4) # enc 4 is the skip connection for concatenation
         # print(f"Decoder 3 output shape before upsampling: {dec3.shape}")
 
-        # dec3_f = self.transp_conv_4(dec3)   
-        # # print(f"Decoder 3 feature map shape: {dec3_f.shape}") 
+        if self.self_distillation and self.use_feature_maps:
+            dec3_f = self.transp_conv_4(dec3)   
+            # print(f"Decoder 3 feature map shape: {dec3_f.shape}") 
 
-        # dec3_f = self.avgpool(dec3_f)
-        # # print(f"Decoder 3 feature map shape after averaging: {dec3_f.shape}")       
+            dec3_f = self.avgpool(dec3_f)
+            # print(f"Decoder 3 feature map shape after averaging: {dec3_f.shape}")       
 
-        # Upsample decoder 3 (Shallow Decoder)
-        out_dec3 = self.transp_conv_dec4(dec3)
-        out_dec3 = self.deep_3(out_dec3)
-        # print(f"Decoder 3 upsampled shape: {out_dec3.shape}")
+        if self.self_distillation:
+            # Upsample decoder 3 (Shallow Decoder)
+            out_dec3 = self.transp_conv_dec4(dec3)
+            out_dec3 = self.deep_3(out_dec3)
+            # print(f"Decoder 3 upsampled shape: {out_dec3.shape}")
 
         # Decoder 2 (Shallow Decoder)
         dec2 = self.decoder4(dec3, enc3) # enc 3 is the skip connection for concatenation
         # print(f"Decoder 2 output shape before upsampling: {dec2.shape}")
 
-        # dec2_f = self.transp_conv_3(dec2)   
-        # # print(f"Decoder 2 feature map shape: {dec2_f.shape}") 
+        if self.self_distillation and self.use_feature_maps:
+            dec2_f = self.transp_conv_3(dec2)   
+            # print(f"Decoder 2 feature map shape: {dec2_f.shape}") 
 
-        # dec2_f = self.avgpool(dec2_f)
-        # # print(f"Decoder 2 feature map shape after averaging: {dec2_f.shape}")
+            dec2_f = self.avgpool(dec2_f)
+            # print(f"Decoder 2 feature map shape after averaging: {dec2_f.shape}")
 
-        # Upsample decoder 2 (Shallow Decoder)
-        out_dec2 = self.transp_conv_dec3(dec2)
-        out_dec2 = self.deep_4(out_dec2) 
-        # print(f"Decoder 2 upsampled shape: {out_dec2.shape}")        
+        if self.self_distillation:
+            # Upsample decoder 2 (Shallow Decoder)
+            out_dec2 = self.transp_conv_dec3(dec2)
+            out_dec2 = self.deep_4(out_dec2) 
+            # print(f"Decoder 2 upsampled shape: {out_dec2.shape}")        
 
         # Decoder 1 (Deepest Decoder)
         dec1 = self.decoder3(dec2, enc2) # enc 2 is the skip connection for concatenation
         # print(f"Decoder 1 output shape before upsampling: {dec1.shape}")
 
-        # dec1_f = self.transp_conv_2(dec1)   
-        # # print(f"Decoder 1 feature map shape: {dec1_f.shape}") 
+        if self.self_distillation and self.use_feature_maps:
+            dec1_f = self.transp_conv_2(dec1)   
+            # print(f"Decoder 1 feature map shape: {dec1_f.shape}") 
 
-        # dec1_f = self.avgpool(dec1_f)
-        # # print(f"Decoder 1 feature map shape after averaging: {dec1_f.shape}")      
+            dec1_f = self.avgpool(dec1_f)
+            # print(f"Decoder 1 feature map shape after averaging: {dec1_f.shape}")      
 
-        # Upsample decoder 1 (Deepest Decoder)
-        out_dec1 = self.transp_conv_dec2(dec1)
-        # print(f"Decoder 1 upsampled shape 1: {out_dec1.shape}")
-        out_dec1 = self.deep_5(out_dec1) 
-        # print(f"Decoder 1 upsampled shape: {out_dec1.shape}")
+        if self.self_distillation:
+            # Upsample decoder 1 (Deepest Decoder)
+            out_dec1 = self.transp_conv_dec2(dec1)
+            # print(f"Decoder 1 upsampled shape 1: {out_dec1.shape}")
+            out_dec1 = self.deep_5(out_dec1) 
+            # print(f"Decoder 1 upsampled shape: {out_dec1.shape}")
                               
         # Prepare output layers        
         out = self.decoder2(dec1, enc1) # enc 1 is the skip connection for concatenation
@@ -488,22 +518,25 @@ class SelfDistilUNETR(nn.Module):
         # print(f"Main model output shape: {out_main.shape}")
                       
         # For traditional Self Distillation (Self Distil)
-        if self.training:
-            ## For Deep Supervision, Self Distillation Original and Self Distillation with GT Distance Maps
-            ## Encoders: out_enc4: deepest encoder and out_enc3, out_enc2, out_enc1: shallow encoders
-            ## Decoders: out_dec1: deepest decoder and out_dec2, out_dec3, out_dec4: shallow decoders
-            ## Encoders: enc4_f: deepest encoder and enc3_f, enc2_f: shallow encoders
-            ## Decoders: dec1_f: deepest decoder and dec3_f, dec2_f: shallow decoders                        
+        if self.training and self.self_distillation:
+            ## For Self Distillation
+            # Encoders:out_enc4: deepest encoder and out_enc3, out_enc2, out_enc1: shallow encoders
+            # Decoders:out_dec1: deepest decoder and out_dec2, out_dec3, out_dec4: shallow decoders                        
             
-            # out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4, enc2_f, enc3_f, enc4_f, dec3_f, dec2_f, dec1_f) # Full KL Div WITH feature maps
-            
-            # out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1) # Half KL Div ONLY for decoders ONLY & WITHOUT feature maps - proving deep supervision is special case of our dual self-distillation design
+            if self.use_feature_maps:
+                ## For Self Distillation with Feature Maps
+                # Encoders: enc4_f: deepest encoder and enc3_f, enc2_f: shallow encoders
+                # Decoders: dec1_f: deepest decoder and dec3_f, dec2_f: shallow decoders 
+                out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4, enc2_f, enc3_f, enc4_f, dec3_f, dec2_f, dec1_f) # Full KL Div WITH feature maps
 
-            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4) # Full KL Div WITHOUT feature maps - includes both encoders and decoders
+            else:
+                out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4) # Full KL Div WITHOUT feature maps - includes both encoders and decoders
             
-            ## For Basic UNETR ONLY
-            # out = out_main  
+        elif self.training and not self.self_distillation and not self.use_feature_maps:
+            # For Basic UNETR ONLY
+            out = out_main  
         else:
+            # For validation/testing
             out = out_main
 
         return out
@@ -513,12 +546,26 @@ if __name__ == '__main__':
     unetr_with_self_distil = SelfDistilUNETR(
         in_channels = 1,
         out_channels = 8,
-        img_size = (96,96,96)
+        feature_size=32,
+        self_distillation=True,
+        use_feature_maps=False,
+        mode=UpsampleMode.DECONV, 
+        interp_mode=InterpolateMode.BILINEAR,
+        img_size = (96,96,96), 
         )
 
-    x1 = torch.rand((1, 1, 96, 96, 96)) # (B,num_ch,x,y,z)
-    print("Self Distil UNetr input shape: ", x1.shape)
+    ## Count model parameters
+    total_params = sum(p.numel() for p in unetr_with_self_distil.parameters() if p.requires_grad)
+    print(f'The total number of model parameter is: {total_params}')
+    
 
-    x3 = unetr_with_self_distil(x1)
-    print("Self Distil UNetr output shape: ", x3[1].shape)
+    x1 = torch.rand((1, 1, 96, 96, 96)) # (B,num_ch,x,y,z)
+    print("UNetr input shape: ", x1.shape)
+
+    
+    # x3 = unetr_with_self_distil(x1)
+    # print("Basic UNetr output shape: ", x3.shape)
+
+    x4 = unetr_with_self_distil(x1)
+    print("Self Distil UNetr output shape: ", x4[1].shape)
 
