@@ -12,8 +12,6 @@ from monai.metrics import DiceMetric, HausdorffDistanceMetric, SurfaceDistanceMe
 from monai.data.utils import pad_list_data_collate
 from monai.losses.dice import DiceCELoss
 
-from torch.backends import cudnn
-
 import data
 from configs import TrainingConfig
 from torchmanager_monai import Manager, metrics
@@ -22,6 +20,7 @@ from networks import SelfDistillnnUNetWithDictOutput as SelfDistilnnUNet
 from torchmanager import callbacks, losses
 
 from torchmanager_core import random
+from torch.backends import cudnn
 from utils import count_parameters
 
 # initialization
@@ -57,7 +56,7 @@ if __name__ == "__main__":
     ## Initialize the UNETR model
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # for MSD-BraTS and MMWHS(MR/CT)
 
-    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
+    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
     
     ##########################################################################################################
     ## Initialize the nnUNet model
