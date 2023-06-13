@@ -6,12 +6,10 @@ import torch.nn as nn
 
 from monai.networks.blocks.dynunet_block import UnetOutBlock
 from monai.networks.blocks.unetr_block import UnetrBasicBlock, UnetrPrUpBlock, UnetrUpBlock
-from monai.networks.blocks.dynunet_block import UnetBasicBlock, UnetResBlock, get_conv_layer
 
 from monai.networks.nets.vit import ViT
 from monai.utils import ensure_tuple_rep
 
-from monai.networks.blocks import UpSample
 from monai.utils import UpsampleMode, InterpolateMode
 
 # Relative import for final training model
