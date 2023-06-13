@@ -175,13 +175,14 @@ class PixelWiseKLDiv(losses.KLDiv):
 # For KL Div Loss
 class Self_Distillation_Loss_KL(losses.MultiLosses):
 
-    def __init__(self, *args, include_background: bool = True, T: int = 1, weight: float = 1, **kwargs) -> None:
+    def __init__(self, *args, include_background: bool = True, T: int = 1, learn_weights: bool = False, weight: float = 1.0, **kwargs) -> None:
 
         super().__init__(*args, **kwargs)  
         self.include_background = include_background # whether to include bkg class or not
-        self.T = T  # divided by temperature (T) to smooth logits before softma
-        # self.w = nn.Parameter(torch.tensor(weight, dtype=torch.float))
-        self.w = nn.parameter.Parameter(data=torch.Tensor(weight), requires_grad=True)
+        self.T = T  # divided by temperature (T) to smooth logits before softmax
+        self.learn_weights = learn_weights
+        if learn_weights:
+            self.params = nn.ParameterList([nn.Parameter(torch.tensor(weight, dtype=torch.float), requires_grad=True) for _ in range(len(self.losses))])
 
     def forward(self, input: Dict[str, Union[Sequence[torch.Tensor], torch.Tensor]], target: Any) -> torch.Tensor: # type:ignore
         
@@ -212,7 +213,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         # initilaize
         l = 0
         
-        # get all KL Div losses between softmax(out_dec1)[target] and log_softmax((out_dec2,out_dec3))[input]
+        # get all KL Div losses between softmax(out_dec1)[target] and log_softmax((out_dec2,out_dec3,out_dec4))[input]
         for i, fn in enumerate(self.losses):
             assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             
@@ -249,7 +250,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         # initilaize        
         l = 0
         
-        # get all KL Div losses between softmax(out_enc4)[target] and log_softmax((out_enc2,out_enc3))[input]
+        # get all KL Div losses between softmax(out_enc4)[target] and log_softmax((out_enc1,out_enc2,out_enc3))[input]
         for i, fn in enumerate(self.losses):
             assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             
@@ -269,7 +270,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         
         # return loss
         assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
-        return loss * self.w
+        return loss
 
 
 # For L2 loss between feature maps/hints dec1_f/enc4_f [target: Teacher (T)] and feature maps (dec3_f/enc3_f,dec2_f/enc2_f) [input: Students (S)]
