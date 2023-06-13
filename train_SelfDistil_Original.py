@@ -23,7 +23,7 @@ from networks import SelfDistillnnUNetWithDictOutput as SelfDistilnnUNet
 from torchmanager import callbacks, losses
 from monai.utils import UpsampleMode, InterpolateMode
 
-from loss_functions import Self_Distillation_Loss_Dice, Self_Distillation_Loss_CE, PixelWiseKLDiv, Self_Distillation_Loss_KL, Self_Distillation_Loss_L2
+from loss_functions import Self_Distillation_Loss_Dice, PixelWiseKLDiv, Self_Distillation_Loss_KL
 
 from torchmanager_core import random
 from torch.backends import cudnn
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec3 and GT labels
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec2 and GT labels
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec1 and GT labels
-        ], weight=1.0, target="out")
+        ], weight=1.0, target="out", learn_weights=False)
 
     # Self Distillation from deepest encoder/decoder (out_enc4/out_dec1): Teacher (T), to shallower encoders/decoders (out_enc2/out_dec2,out_enc3/out_dec3,out_dec4/out_enc1): Students (S)  
     # For KL Div between softmax(out_dec1/out_enc4) [target] and log_softmax((out_dec2/out_enc3,out_dec3/out_enc2,out_dec4/out_enc1)) [input]
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec4/out_enc1 (S) & out_dec1/out_enc4 (T)
         losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec3/out_enc2 (S) & out_dec1/out_enc4 (T)
         losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec2/out_enc3 (S) & out_dec1/out_enc4 (T)
-    ], weight=alpha_KL, include_background=True, T=temperature) # pass the entire dict NOT just "out"
+    ], weight=alpha_KL, include_background=True, T=temperature, learn_weights=False) # pass the entire dict NOT just "out"
 
     loss_fn = {
         "dice": loss_dice,
