@@ -14,90 +14,17 @@ from torchmanager import losses
 from torchmanager_core import _raise
 
 
-class FocalTverskyLoss(TverskyLoss):
-    def __init__(
-        self, 
-        include_background: bool = True,
-        to_onehot_y: bool = False,
-        sigmoid: bool = False,
-        softmax: bool = False,
-        other_act: Optional[Callable] = None,
-        alpha: float = 0.5,
-        beta: float = 0.5,
-        gamma: int = 1,
-    ) -> None:
-
-        super().__init__(include_background, to_onehot_y, sigmoid, softmax, other_act, alpha, beta, reduction=LossReduction.NONE)
-
-        self.include_background = include_background
-        self.to_onehot_y = to_onehot_y
-        self.sigmoid = sigmoid
-        self.softmax = softmax
-        self.alpha = alpha
-        self.beta = beta
-        self.gamma = gamma
-
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            input: the shape should be BNH[WD].
-            target: the shape should be BNH[WD].
-
-        Returns:
-            ft_loss: the focal Tversky loss.
-
-        """
-        
-        tversky_loss = super().forward(input=input, target=target) # Tversky Loss
-        ft_loss = tversky_loss ** (1/self.gamma)
-
-        return torch.mean(ft_loss)
-
-
-class BoundaryLoss(losses.Loss):
-
-    def __init__(self, *args, include_background: bool = True, **kwargs) -> None:
-        super().__init__(*args, **kwargs)  
-        self.include_background = include_background # whether to include bkg class or not
-
-    def forward(self, input: torch.Tensor, target: Any) -> torch.Tensor:
-        """
-        Args:
-            input: predicted logits (batch_size, num_class, x,y,z)
-            target (GT Dist Map Labels): ground-truth dist map labels, shape (batch_size, num_class, x,y,z)
-        Returns:
-            boundary_loss: the boundary loss (scalar tensor)
-        """
-                
-        pred_logits_out: torch.Tensor = input # (B, num_cls, x,y,z)
-        #print("Preds Tensor shape: ", pred_logits_out.shape)
-
-        pred_probs: torch.Tensor = F.softmax(pred_logits_out, dim=1)
-        # print("Softmax Probs shape: ", pred_probs.shape)
-        
-        # predicted softmax probs for foreground classes ONLY
-        if not self.include_background:
-            pc: torch.Tensor = pred_probs[:, 1:, ...].type(torch.float32) # considering only foreground classes         
-            # print("Softmax Probs Foreground ONLY shape: ", pc.shape)
-
-               
-        dist: torch.Tensor = target # (B, num_cls, x,y,z)
-        # print("Distance Map Tensor shape: ", dist.shape)
-        
-        # Ground-Truth Distance Maps for foreground classes ONLY
-        if not self.include_background:
-            dc: torch.Tensor = dist[:, 1:, ...].type(torch.float32)
-            # print("Distance Map Foreground ONLY Tensor shape: ", dc.shape)
-        
-        multipled: torch.Tensor = torch.einsum("bkxyz,bkxyz->bkxyz", pc, dc)  # type:ignore
-        boundary_loss: torch.Tensor = multipled.mean()
-        #print("Boundary Loss shape: ", boundary_loss.shape)
-        
-        return boundary_loss
-
-
 # For DiceCE Loss between GT Labels(target="out") [target] and softmax(out_main,out_dec2,out_dec3,out_dec4) [input]
 class Self_Distillation_Loss_Dice(losses.MultiLosses):
+
+    def __init__(self, *args, learn_weights: bool = False, weight: float = 1.0, **kwargs) -> None:
+
+        super().__init__(*args, **kwargs)  
+
+        self.learn_weights = learn_weights
+        if learn_weights:
+            self.params_dec = nn.ParameterList([nn.Parameter(torch.tensor(weight, dtype=torch.float), requires_grad=True) for _ in range(len(self.losses)-1)])
+
     def forward(self, input: Union[Sequence[torch.Tensor], torch.Tensor], target: Any) -> torch.Tensor:
         # initilaize
         loss = 0
@@ -110,51 +37,10 @@ class Self_Distillation_Loss_Dice(losses.MultiLosses):
         # get all losses
         for i, fn in enumerate(self.losses):
             assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
-            l = fn(input[i], target)
-            loss += l
-
-        # return loss
-        assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
-        return loss
-
-# For CE Loss (L_CE) between GT Labels(target="out") [target] and softmax(out_main,out_dec2,out_dec3,out_dec4) [input]
-class Self_Distillation_Loss_CE(losses.MultiLosses):
-    def forward(self, input: Union[Sequence[torch.Tensor], torch.Tensor], target: Any) -> torch.Tensor:
-        # initilaize
-        loss = 0
-        l = 0
-        
-        # Validation Mode
-        if isinstance(input, torch.Tensor): return self.losses[0](input, target)
-        
-        # Training Mode
-        # get all losses
-        for i, fn in enumerate(self.losses):
-            assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
-            l = fn(input[i+1], target)
-            loss += l
-
-        # return loss
-        assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
-        return loss
-
-class Self_Distillation_Loss_Boundary(losses.MultiLosses):
-    def forward(self, input: Dict[str, Union[Sequence[torch.Tensor], torch.Tensor]], target: Any) -> torch.Tensor:
-        # initilaize
-        loss = 0
-        l = 0
-
-        # Validation Mode ("dist_map" not included for inference) - Just use the main output (out_main)
-        if "dist_map" not in input.keys(): 
-            assert (self.training == False), _raise(TypeError("Should be in validation mode.")) 
-            loss = torch.tensor(0, dtype=input["out"].dtype, device=input["out"].device) # type:ignore
-            return loss
-        
-        # Training Mode
-        # get all losses
-        for i, fn in enumerate(self.losses):
-            assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
-            l = fn(input["out"][i], target["dist_map"]) 
+            if self.learn_weights and i > 0:
+                l = fn(input[i], target) * self.params_dec[i-1]
+            else:
+                l = fn(input[i], target)
             loss += l
 
         # return loss
@@ -177,12 +63,14 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
 
     def __init__(self, *args, include_background: bool = True, T: int = 1, learn_weights: bool = False, weight: float = 1.0, **kwargs) -> None:
 
-        super().__init__(*args, **kwargs)  
+        super().__init__(*args, **kwargs) 
+
         self.include_background = include_background # whether to include bkg class or not
         self.T = T  # divided by temperature (T) to smooth logits before softmax
         self.learn_weights = learn_weights
         if learn_weights:
-            self.params = nn.ParameterList([nn.Parameter(torch.tensor(weight, dtype=torch.float), requires_grad=True) for _ in range(len(self.losses))])
+            self.params_dec = nn.ParameterList([nn.Parameter(torch.tensor(weight, dtype=torch.float), requires_grad=True) for _ in range(len(self.losses))])
+            self.params_enc = nn.ParameterList([nn.Parameter(torch.tensor(weight, dtype=torch.float), requires_grad=True) for _ in range(len(self.losses))])
 
     def forward(self, input: Dict[str, Union[Sequence[torch.Tensor], torch.Tensor]], target: Any) -> torch.Tensor: # type:ignore
         
@@ -225,7 +113,10 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
 
             log_input = F.log_softmax(input_logits_before_log, dim=1)
 
-            l = fn(log_input, target)
+            if self.learn_weights:
+                l = fn(log_input, target) * self.params_dec[i]
+            else:
+                l = fn(log_input, target)
 
             loss += l * (self.T ** 2)
 
@@ -262,7 +153,10 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
 
             log_input = F.log_softmax(input_logits_before_log, dim=1)
 
-            l = fn(log_input, target)
+            if self.learn_weights:
+                l = fn(log_input, target) * self.params_enc[i]
+            else:
+                l = fn(log_input, target)
 
             loss += l * (self.T ** 2)
 
