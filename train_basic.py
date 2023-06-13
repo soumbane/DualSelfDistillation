@@ -90,9 +90,9 @@ if __name__ == "__main__":
     # initialize optimizer, loss, metrics, and post processing
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS
 
-    # # initialize learning rate scheduler (lr used by MMWHS challenge winner)
-    # lr_step = max(int(config.epochs / 6), 1)
-    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5)
+    # initialize learning rate scheduler (lr used by MMWHS challenge winner)
+    lr_step = max(int(config.epochs / 6), 1)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5)  # used for MMWHS
     # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
 
     # Initilialize Loss Functions
@@ -130,11 +130,10 @@ if __name__ == "__main__":
 
     last_ckpt_callback = callbacks.LastCheckpoint(manager, last_ckpt_dir)
     besti_ckpt_callback = callbacks.BestCheckpoint("dice", manager, best_ckpt_dir)
-    # lr_scheduler_callback = callbacks.LrSchedueler(lr_scheduler, tf_board_writer=tensorboard_callback.writer)
+    lr_scheduler_callback = callbacks.LrSchedueler(lr_scheduler, tf_board_writer=tensorboard_callback.writer)
 
     # Final callbacks list
-    # callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, lr_scheduler_callback]
-    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback]
+    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, lr_scheduler_callback]
 
     # train
     manager.fit(training_dataset, config.epochs, val_dataset=validation_dataset, device=config.device, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, show_verbose=config.show_verbose)
@@ -147,8 +146,6 @@ if __name__ == "__main__":
 
     # save and test with best model on validation dataset  
     manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic_Fold1.exp/best.model") # for Basic Unetr
-    
-    # manager = Manager.from_checkpoint("experiments/multimodalMR_MSD_BraTS_UNETR_Basic.exp/best.model") # for Basic nnUnet
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model

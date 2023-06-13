@@ -94,19 +94,16 @@ if __name__ == "__main__":
     ## Count model parameters
     print(f'The total number of model parameter is: {count_parameters(model)}')
     
-    # # initialize optimizer, loss, metrics, and post processing
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS (nnUnet)
+    # initialize optimizer, loss, metrics, and post processing
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS (nnUnet)
 
     # initialize learning rate scheduler (lr used by MMWHS challenge winner)
-    # lr_step = max(int(config.epochs / 6), 1)
-    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5)
+    lr_step = max(int(config.epochs / 6), 1)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5) # used for MMWHS
     # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
 
     # Initilialize Loss Functions
     loss_fn: Union[losses.Loss, dict[str, losses.Loss]]
-
-    # Initial weights for cross-entropy (CE) term (L_CE)
-    eta_ce_init = 1.0
 
     # Hyper-parameters for Self Distillation
     alpha_KL: float = 1.0  # weight of KL Div Loss Term (for UNETR/nnUNet)
@@ -166,9 +163,6 @@ if __name__ == "__main__":
         "val_msd": msd_fn,
         } 
 
-    params = [p for p in model.parameters()] + [p for p in loss_KL.parameters()]
-    optimizer = torch.optim.AdamW(params, lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS (nnUnet)
-
     post_labels = data.transforms.AsDiscrete(to_onehot=num_classes)
     post_predicts = data.transforms.AsDiscrete(argmax=True, to_onehot=num_classes)
 
@@ -181,23 +175,12 @@ if __name__ == "__main__":
 
     last_ckpt_callback = callbacks.LastCheckpoint(manager, last_ckpt_dir)
     besti_ckpt_callback = callbacks.BestCheckpoint("dice", manager, best_ckpt_dir)
-    # lr_scheduler_callback = callbacks.LrSchedueler(lr_scheduler, tf_board_writer=tensorboard_callback.writer)
-    
-    ##############################################################################################################
-    # # Decease cross-entropy weight by this amount every epoch (To reduce L_CE for L_DCE term)
-    # decr_eta_ce = 1.665e-3 # decrease from 1.0 to 0.001 for 600 epochs (for UNETR)
-    # # decr_eta_ce = 3.33e-3 # decrease from 1.0 to 0.001 for 300 epochs (for nnUNet with MMWHS/MSD-BraTS)
-    # # decr_eta_ce = 3.07385e-3 # decrease from 1.0 to 0.001 for 325 epochs (for UNETR with MSD-BraTS)
-
-    # def getw_ce(e):
-    #     return (loss_fn["ce"].weight - decr_eta_ce)
-
-    # weights_callback_ce = callbacks.LambdaDynamicWeight(getw_ce, loss_fn["ce"], writer=tensorboard_callback.writer, name='ce_weight')
+    lr_scheduler_callback = callbacks.LrSchedueler(lr_scheduler, tf_board_writer=tensorboard_callback.writer)
 
     ##############################################################################################################
 
     # Final callbacks list
-    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback]
+    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, lr_scheduler_callback]
 
     # train
     manager.fit(training_dataset, config.epochs, val_dataset=validation_dataset, device=config.device, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, show_verbose=config.show_verbose)
@@ -210,8 +193,6 @@ if __name__ == "__main__":
 
     # save and test with best model on validation dataset  
     manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_SelfDist_Original_Fold1.exp/best.model") # for Self Distillation Original
-
-    # manager = Manager.from_checkpoint("experiments/multimodalMR_MSD_BraTS_UNETR_SelfDist_Original.exp/best.model") # for Self Distillation Original
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model
