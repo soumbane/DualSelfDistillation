@@ -1,3 +1,3 @@
-from monai.networks.nets.unetr import * # type: ignore
+from monai.networks.nets.swin_unetr import * # type: ignore
 
-from .unetr import UNETRWithDictOutput, SelfDistillUNETRWithDictOutput
+from .swinunetr import SwinUNETRWithDictOutput, SelfDistillSwinUNETRWithDictOutput

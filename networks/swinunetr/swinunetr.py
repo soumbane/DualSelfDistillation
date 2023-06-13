@@ -3,15 +3,15 @@ from typing import Any, Optional, Union, Sequence
 
 import torch
 
-from monai.networks.nets.unetr import UNETR
-from .self_distill_unetr import SelfDistilUNETR
+from monai.networks.nets.swin_unetr import SwinUNETR
+from .self_distill_swinunetr import SelfDistilSwinUNETR
 
 
-class UNETRWithDictOutput(UNETR):
+class SwinUNETRWithDictOutput(SwinUNETR):
     """
-    A UNETR that returns a dictionary during training
+    A SwinUNETR that returns a dictionary during training
     
-    * extends: `UNETR`
+    * extends: `SwinUNETR`
     """
 
     def forward(self, x_in: torch.Tensor) -> Union[torch.Tensor, dict[str, torch.Tensor]]:
@@ -20,11 +20,11 @@ class UNETRWithDictOutput(UNETR):
         return {"out": super().forward(x_in)} if self.training else super().forward(x_in)
 
 
-class SelfDistillUNETRWithDictOutput(SelfDistilUNETR):
+class SelfDistillSwinUNETRWithDictOutput(SelfDistilSwinUNETR):
     """
-    A UNETR that returns a dictionary during training
+    A SwinUNETR that returns a dictionary during training
     
-    * extends: `SelfDistilUNETR`
+    * extends: `SelfDistilSwinUNETR`
     """
 
     def forward(self, x_in: torch.Tensor) -> Union[torch.Tensor, dict[str, torch.Tensor]]:
