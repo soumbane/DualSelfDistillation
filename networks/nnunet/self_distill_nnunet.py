@@ -6,10 +6,10 @@ import torch.nn as nn
 from torch.nn.functional import interpolate
 
 # Relative import for final training model
-# from .deepUp import DeepUp
+from .deepUp import DeepUp
 
 # Absolute import for testing this script
-from deepUp import DeepUp
+# from deepUp import DeepUp
 
 from monai.networks.blocks.dynunet_block import UnetBasicBlock, UnetOutBlock, UnetResBlock, UnetUpBlock
 
