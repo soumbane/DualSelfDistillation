@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import interpolate
 
+from monai.utils import UpsampleMode, InterpolateMode
+
 # Relative import for final training model
 from .deepUp import DeepUp
 
@@ -101,6 +103,8 @@ class SelfDistilDynUNet(nn.Module):
         deep_supr_num: int = 1,
         self_distillation: bool = False,
         self_distillation_num: int = 4,
+        mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
+        interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
         dataset: str = "MMWHS",
         res_block: bool = False,
         trans_bias: bool = False,
@@ -147,35 +151,45 @@ class SelfDistilDynUNet(nn.Module):
                 spatial_dims = 3,
                 in_channels = 320,
                 out_channels = self.out_channels,
-                scale_factor = 16
+                scale_factor = 16,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) 
                 
                 self.deep_2 = DeepUp(
                 spatial_dims = 3,
                 in_channels = 256,
                 out_channels = self.out_channels,
-                scale_factor = 8
+                scale_factor = 8,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) 
 
                 self.deep_3 = DeepUp(
                 spatial_dims = 3,
                 in_channels = 128,
                 out_channels = self.out_channels,
-                scale_factor = 4
+                scale_factor = 4,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) 
 
                 self.deep_4 = DeepUp(
                 spatial_dims = 3,
                 in_channels = 64,
                 out_channels = self.out_channels,
-                scale_factor = 2
+                scale_factor = 2,
+                mode=mode, 
+                interp_mode=interp_mode,
                 )
 
                 self.deep_5 = DeepUp(
                 spatial_dims = 3,
                 in_channels = 32,
                 out_channels = self.out_channels,
-                scale_factor = 1
+                scale_factor = 1,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) 
 
             elif dataset == "MSD-BraTS":
@@ -184,7 +198,9 @@ class SelfDistilDynUNet(nn.Module):
                 spatial_dims = 3,
                 in_channels = 256,
                 out_channels = self.out_channels,
-                scale_factor = 16
+                scale_factor = 16,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) # for MSD-BraTS
 
                 
@@ -192,7 +208,9 @@ class SelfDistilDynUNet(nn.Module):
                 spatial_dims = 3,
                 in_channels = 128,
                 out_channels = self.out_channels,
-                scale_factor = 8
+                scale_factor = 8,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) # for MSD-BraTS
 
                 
@@ -200,7 +218,9 @@ class SelfDistilDynUNet(nn.Module):
                 spatial_dims = 3,
                 in_channels = 64,
                 out_channels = self.out_channels,
-                scale_factor = 4
+                scale_factor = 4,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) # for MSD-BraTS
 
                     
@@ -208,14 +228,18 @@ class SelfDistilDynUNet(nn.Module):
                 spatial_dims = 3,
                 in_channels = 32,
                 out_channels = self.out_channels,
-                scale_factor = 2
+                scale_factor = 2,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) # for MSD-BraTS
                 
                 self.deep_6 = DeepUp(
                 spatial_dims = 3,
                 in_channels = 16,
                 out_channels = self.out_channels,
-                scale_factor = 1
+                scale_factor = 1,
+                mode=mode, 
+                interp_mode=interp_mode,
                 ) # for MSD-BraTS
         
             else:
