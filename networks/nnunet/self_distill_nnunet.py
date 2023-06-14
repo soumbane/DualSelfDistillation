@@ -235,7 +235,7 @@ class SelfDistilDynUNet(nn.Module):
                 self.self_distillation_enc_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2])
                 self.self_distillation_dec_heads = nn.ModuleList([self.deep_4,self.deep_3,self.deep_2,self.deep_1])
 
-            elif self.self_distillation and dataset == "MSD-BraTS":
+            elif dataset == "MSD-BraTS":
                 # for MSD-BraTS
                 self.self_distillation_enc_heads = nn.ModuleList([self.deep_6,self.deep_5,self.deep_4,self.deep_3])
                 self.self_distillation_dec_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2])
