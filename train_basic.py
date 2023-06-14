@@ -17,6 +17,7 @@ from configs import TrainingConfig
 from torchmanager_monai import Manager, metrics
 from networks import SelfDistillUNETRWithDictOutput as SelfDistilUNETR
 from networks import SelfDistillnnUNetWithDictOutput as SelfDistilnnUNet
+from networks import SelfDistillSwinUNETRWithDictOutput as SelfDistilSwinUNETR
 from torchmanager import callbacks, losses
 
 from torchmanager_core import random
@@ -56,14 +57,14 @@ if __name__ == "__main__":
     ## Initialize the UNETR model
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # for MSD-BraTS and MMWHS(MR/CT)
 
-    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
+    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
     
     ##########################################################################################################
     ## Initialize the nnUNet model
     # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
     # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
-    # # filters = [32,64,128,256,320]  # originally used for MMWHS
-    # filters = [16,32,64,128,256] # try this for MSD-BraTS due to memory limitations
+    # filters = [32,64,128,256,320]  # originally used for MMWHS
+    # # filters = [16,32,64,128,256] # try this for MSD-BraTS due to memory limitations
 
     # model = SelfDistilnnUNet(
     #     spatial_dims = 3,
@@ -82,6 +83,10 @@ if __name__ == "__main__":
     #     )
     
     ##########################################################################################################
+    ## Initialize the SwinUNETR model
+    model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=False)  # MMWHS CT only
+
+    ##########################################################################################################
     ## Count model parameters
     print(f'The total number of model parameter is: {count_parameters(model)}')
 
@@ -91,7 +96,8 @@ if __name__ == "__main__":
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS
 
     # initialize learning rate scheduler (lr used by MMWHS challenge winner)
-    lr_step = max(int(config.epochs / 6), 1)
+    # lr_step = max(int(config.epochs / 6), 1)  # for nnUNet and UNETR (MMWHS-CT)
+    lr_step = max(int(config.epochs / 8), 1)  # ONLY for SwinUNETR (MMWHS-CT)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5)  # used for MMWHS
     # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
 
@@ -145,7 +151,7 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic_Fold1.exp/best.model") # for Basic Unetr
+    manager = Manager.from_checkpoint("experiments/CT_MMWHS_SwinUNETR_Basic_Fold1.exp/best.model") 
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model
