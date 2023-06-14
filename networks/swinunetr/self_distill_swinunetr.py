@@ -14,15 +14,15 @@ from monai.networks.blocks import UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
 from monai.utils import ensure_tuple_rep
 from monai.utils import UpsampleMode, InterpolateMode
 
-from swin_unetr_blocks import SwinTransformer
+from .swin_unetr_blocks import SwinTransformer
 
 # Relative import for final training model
-# from .deepUp import DeepUp
+from .deepUp import DeepUp
 
 # Absolute import for testing this script
-from deepUp import DeepUp
+# from deepUp import DeepUp
 
-class SwinUNETR(nn.Module):
+class SelfDistilSwinUNETR(nn.Module):
     """
     Swin UNETR based on: "Hatamizadeh et al.,
     Swin UNETR: Swin Transformers for Semantic Segmentation of Brain Tumors in MRI Images
@@ -36,6 +36,9 @@ class SwinUNETR(nn.Module):
         depths: Sequence[int] = (2, 2, 2, 2),
         num_heads: Sequence[int] = (3, 6, 12, 24),
         feature_size: int = 24,
+        self_distillation: bool = False,
+        mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
+        interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
         norm_name: Union[Tuple, str] = "instance",
         drop_rate: float = 0.0,
         attn_drop_rate: float = 0.0,
@@ -79,6 +82,8 @@ class SwinUNETR(nn.Module):
         patch_size = ensure_tuple_rep(2, spatial_dims)
         window_size = ensure_tuple_rep(7, spatial_dims)
 
+        self.self_distillation = self_distillation
+        
         if not (spatial_dims == 2 or spatial_dims == 3):
             raise ValueError("spatial dimension should be 2 or 3.")
 
@@ -118,6 +123,9 @@ class SwinUNETR(nn.Module):
             spatial_dims=spatial_dims,
         )
 
+        ############
+        # Encoders #
+        ############
         self.encoder1 = UnetrBasicBlock(
             spatial_dims=spatial_dims,
             in_channels=in_channels,
@@ -168,6 +176,9 @@ class SwinUNETR(nn.Module):
             res_block=True,
         )
 
+        ############
+        # Decoders #
+        ############
         self.decoder5 = UnetrUpBlock(
             spatial_dims=spatial_dims,
             in_channels=16 * feature_size,
@@ -217,36 +228,196 @@ class SwinUNETR(nn.Module):
             res_block=True,
         )
 
+        #########################################
+        # Upsample blocks for Self Distillation #
+        #########################################
+
+        if self_distillation:            
+            self.deep_enc0 = DeepUp(
+            spatial_dims = 3,
+            in_channels = feature_size,
+            out_channels = out_channels,
+            scale_factor = 1,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
+
+            self.deep_enc1 = DeepUp(
+            spatial_dims = 3,
+            in_channels = feature_size,
+            out_channels = out_channels,
+            scale_factor = 2,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
+
+            self.deep_enc2 = DeepUp(
+            spatial_dims = 3,
+            in_channels = 2 * feature_size,
+            out_channels = out_channels,
+            scale_factor = 4,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
+
+            self.deep_enc3 = DeepUp(
+            spatial_dims = 3,
+            in_channels = 4 * feature_size,
+            out_channels = out_channels,
+            scale_factor = 8,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
+
+            self.deep_enc4 = DeepUp(
+            spatial_dims = 3,
+            in_channels = 8 * feature_size,
+            out_channels = out_channels,
+            scale_factor = 16,
+            mode=mode, 
+            interp_mode=interp_mode,
+            )
+
+            self.deep_dec4 = self.deep_enc4
+
+            self.deep_dec3 = self.deep_enc3
+
+            self.deep_dec2 = self.deep_enc2
+
+            self.deep_dec1 = self.deep_enc1
+
+        #############
+        # Out block #
+        #############
         self.out = UnetOutBlock(
             spatial_dims=spatial_dims, in_channels=feature_size, out_channels=out_channels
         )  # type: ignore
 
     def forward(self, x_in):
+        # Main SwinViT Transformer
         hidden_states_out = self.swinViT(x_in, self.normalize)
+
+        #################################################
+        # Encoders and Upsamplers for Self Distillation #
+        #################################################
+
+        # Encoder 0 (Shallow Encoder)
         enc0 = self.encoder1(x_in)
+
+        if self.self_distillation:
+            out_enc0 = self.deep_enc0(enc0) 
+        else:
+            out_enc0 = None     
+
         enc1 = self.encoder2(hidden_states_out[0])
+
+        # Encoder 1 (Shallow Encoder)
+        if self.self_distillation:
+            out_enc1 = self.deep_enc1(enc1) 
+        else:
+            out_enc1 = None 
+
+
         enc2 = self.encoder3(hidden_states_out[1])
+
+        # Encoder 2 (Shallow Encoder)
+        if self.self_distillation:
+            out_enc2 = self.deep_enc2(enc2) 
+        else:
+            out_enc2 = None 
+
+
         enc3 = self.encoder4(hidden_states_out[2])
+
+        # Encoder 3 (Deep Encoder)
+        if self.self_distillation:
+            out_enc3 = self.deep_enc3(enc3) 
+        else:
+            out_enc3 = None 
+
+        # Encoder 4 (Deepest Encoder)
+        if self.self_distillation:
+            out_enc4 = self.deep_enc4(hidden_states_out[3]) 
+        else:
+            out_enc4 = None 
+
+        # Bottom-most layer between encoder and decoder
+        # No DeepUp layers for this one
         dec4 = self.encoder10(hidden_states_out[4])
+
+        #################################################
+        # Decoders and Upsamplers for Self Distillation #
+        #################################################
+
         dec3 = self.decoder5(dec4, hidden_states_out[3])
+
+        # Decoder 4 (Shallow Decoder)
+        if self.self_distillation:
+            out_dec4 = self.deep_dec4(dec3) 
+        else:
+            out_dec4 = None 
+
         dec2 = self.decoder4(dec3, enc3)
+
+        # Decoder 3 (Shallow Decoder)
+        if self.self_distillation:
+            out_dec3 = self.deep_dec3(dec2) 
+        else:
+            out_dec3 = None 
+
         dec1 = self.decoder3(dec2, enc2)
+
+        # Decoder 2 (Deep Decoder)
+        if self.self_distillation:
+            out_dec2 = self.deep_dec2(dec1) 
+        else:
+            out_dec2 = None 
+
         dec0 = self.decoder2(dec1, enc1)
+
+        # Decoder 1 (Deepest Decoder)
+        if self.self_distillation:
+            out_dec1 = self.deep_dec1(dec0) 
+        else:
+            out_dec1 = None 
+
         out = self.decoder1(dec0, enc0)
-        logits = self.out(out)
-        return logits
+
+        # Prepare output layers
+        out_main = self.out(out)
+
+        # For Self Distillation (ONLY during training)
+        if self.training and self.self_distillation:
+            ## For Self Distillation
+            # Encoders:out_enc4: deepest encoder and out_enc3, out_enc2, out_enc1: shallow encoders
+            # Decoders:out_dec1: deepest decoder and out_dec2, out_dec3, out_dec4: shallow decoders                        
+            
+            # Full KL Div WITHOUT feature maps - includes both encoders and decoders
+            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4)
+            
+        elif self.training and not self.self_distillation:
+            # For Basic SwinUNETR ONLY (NO Self-Distillation)
+            out = out_main  
+        else:
+            # For validation/testing (NO Self-Distillation)
+            out = out_main
+
+        return out
 
 
 if __name__ == '__main__':
-    swinunetr = SwinUNETR(
+    self_distil_swinunetr = SelfDistilSwinUNETR(
         img_size = (96,96,96),
         in_channels = 1,
         out_channels = 8,
-        feature_size=36,         
+        feature_size=48,    
+        self_distillation=True,
+        mode=UpsampleMode.DECONV, 
+        interp_mode=InterpolateMode.BILINEAR,     
         )
 
     ## Count model parameters
-    total_params = sum(p.numel() for p in swinunetr.parameters() if p.requires_grad)
+    total_params = sum(p.numel() for p in self_distil_swinunetr.parameters() if p.requires_grad)
     print(f'The total number of model parameter is: {total_params}')
     
 
@@ -254,12 +425,9 @@ if __name__ == '__main__':
     print("SwinUNetr input shape: ", x1.shape)
 
     
-    x3 = swinunetr(x1)
-    print("Basic SwinUNetr output shape: ", x3.shape)
+    # x3 = self_distil_swinunetr(x1)
+    # print("Basic SwinUNetr output shape: ", x3.shape)
 
-    # x4 = swinunetr(x1)
-    # print("Self Distil SwinUNetr output shape: ", x4[1].shape)
-
-    # x5 = swinunetr(x1)
-    # print("Self Distil SwinUNetr output shape: ", x5[14].shape)
+    x4 = self_distil_swinunetr(x1)
+    print("Self Distil SwinUNetr output shape: ", x4[1].shape)
 
