@@ -34,7 +34,18 @@ train_type = "Self_Distill_Original"
 
 ## Set Pre-trained Model Architecture
 arch = "UNETR"
+# arch = "SwinUNETR"
 # arch = "nnUnet"
+
+## Fold number for MMWHS dataset ONLY
+fold_no = "1"
+fold = "Fold_" + fold_no
+
+## choose best or last model
+saved_model = "last"
+
+## Root path for experiments and pre-trained models
+root = "/home/neil/Lab_work/Medical_Image_Segmentation"
 
 if dataset == "MMWHS":
     data_dir = "/home/share/Data/Data_MMWHS_All/" + modality  # for MMWHS
@@ -49,10 +60,10 @@ else:
 ## Important: Please set scale_intensity_ranged = True for CT and scale_intensity_ranged = False for MR in both data loading files challenge.py and challenge_dist_map.py. These are the preprocessing steps needed for inference (validation and testing)
 
 if train_type == "Basic":
-    # best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_Basic.exp/best.model")
-    best_model_path = os.path.join("experiments", "CT_MMWHS_UNETR_Basic_Fold1.exp/best.model")
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_SwinUNETR_CT_models_final", fold, "CT_MMWHS_SwinUNETR_Basic_Fold1.exp/last.model")
 
-    print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality ....")
+    print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
 
 elif train_type == "Deep_Super":
     best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_DeepSuperOnly.exp/best.model")
@@ -61,10 +72,11 @@ elif train_type == "Deep_Super":
     print(f"{mode} with the Basic {arch} architecture with Deep Supervision on {dataset} dataset with {modality} modality ....")
 
 elif train_type == "Self_Distill_Original":
-    # best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_SelfDist_Original.exp/best.model")
-    best_model_path = os.path.join("experiments", "CT_MMWHS_UNETR_SelfDist_Original_Fold1.exp/best.model")
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
 
-    print(f"{mode} with the Basic {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality ....")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", fold, "CT_MMWHS_UNETR_SelfDist_Original_Fold1.exp/last.model")
+
+    print(f"{mode} with the Basic {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
 
 elif train_type == "Self_Distill_DistMaps":
     best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_SelfDist_DistMaps.exp/best.model")
