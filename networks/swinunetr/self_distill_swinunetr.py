@@ -329,13 +329,13 @@ class SelfDistilSwinUNETR(nn.Module):
 
         enc3 = self.encoder4(hidden_states_out[2])
 
-        # Encoder 3 (Deep Encoder)
+        # Encoder 3 (Deepest Encoder)
         if self.self_distillation:
             out_enc3 = self.deep_enc3(enc3) 
         else:
             out_enc3 = None 
 
-        # Encoder 4 (Deepest Encoder)
+        # Encoder 4 (Deepest Encoder) - currently NOT used
         if self.self_distillation:
             out_enc4 = self.deep_enc4(hidden_states_out[3]) 
         else:
@@ -393,7 +393,7 @@ class SelfDistilSwinUNETR(nn.Module):
             # Decoders:out_dec1: deepest decoder and out_dec2, out_dec3, out_dec4: shallow decoders                        
             
             # Full KL Div WITHOUT feature maps - includes both encoders and decoders
-            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4)
+            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc0, out_enc1, out_enc2, out_enc3)
             
         elif self.training and not self.self_distillation:
             # For Basic SwinUNETR ONLY (NO Self-Distillation)
