@@ -2,21 +2,16 @@
 import glob
 import os
 from monai.data import CacheDataset
-import numpy as np
-from typing import Union, Tuple
-import random
+from typing import Tuple
 
 from .transforms import (
     AddChanneld,
     Compose,
     ConvertLabel,
     LoadImaged,
-    AsChannelFirstd,
     MapTransform,
     NormalizeIntensityd,
     Orientationd,
-    CropForegroundd,
-    CenterSpatialCropd,
     RandCropByPosNegLabeld,
     RandFlipd,
     RandRotate90d,
@@ -46,24 +41,23 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
         {"image": image_name, "label": label_name}
         for image_name, label_name in zip(train_images, train_labels)
     ]
-
-    '''# Assign Testing Set First (4 patients)
-    test_data_dicts = data_dicts[:train_split] # First 4 patients for testing
-
-    train_data_dicts_temp = data_dicts[train_split:] # Last 16 patients for train/validation
-
-    # randomly shuffle the dataset
-    seed = 0
-    random.Random(seed).shuffle(train_data_dicts_temp)
-
-    # Assign Train/Validation Sets (12 for training & 4 for validation)
-    train_data_dicts, val_data_dicts = train_data_dicts_temp[train_split:], train_data_dicts_temp[:train_split]'''
    
+    ## Divide the 20 patients for 5-fold Cross-Validation
+
     # Patient 1-4 (First 4 patients) for validation - Fold 1
     train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
 
     # Patient 5-8 for validation - Fold 2
-    # train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
+    # train_data_dicts, val_data_dicts = data_dicts[:train_split] + data_dicts[train_split+4:], data_dicts[train_split:train_split+4]
+
+    # Patient 9-12 for validation - Fold 3
+    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4] + data_dicts[train_split+4*2:], data_dicts[train_split+4:train_split+4*2] 
+
+    # Patient 13-16 for validation - Fold 4
+    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4*2] + data_dicts[train_split+4*3:], data_dicts[train_split+4*2:train_split+4*3] 
+
+    # Patient 17-20 for validation - Fold 5
+    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4*3], data_dicts[train_split+4*3:] 
     
     ##############################################################################################################
 
@@ -71,7 +65,6 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     train_transforms: list[MapTransform] = [
         LoadImaged(keys=["image", "label"]),
         AddChanneld(keys=["image", "label"]),
-        #AsChannelFirstd(keys=("dist_map")), # same as data_dict['dist_map'].permute(3, 0, 1, 2)
         ConvertLabel(keys='label'),
         Spacingd(
             keys=["image", "label"],
@@ -79,7 +72,6 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
             mode=("bilinear", "nearest"),
         ),
         Orientationd(keys=["image", "label"], axcodes="RAS"),
-        # CenterSpatialCropd(keys=["image", "label"], roi_size=(128,128,128)),
     ]
     if scale_intensity_ranged:
         train_transforms += [
@@ -93,14 +85,13 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
         RandCropByPosNegLabeld(
             keys=["image", "label"],
             label_key="label",
-            spatial_size=img_size,  # 16*n
+            spatial_size=img_size, 
             pos=1,
             neg=0, # neg=0 & pos=1 to always pick a foreground voxel as center for random crop
             num_samples=2, 
             image_key="image",
             image_threshold=0,
         ),
-        #CropForegroundd(keys=["image", "label"], source_key="label", select_fn=lambda x: x > 0),
 
         RandFlipd(
             keys=["image", "label"],
@@ -137,7 +128,6 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     val_transforms: list[MapTransform] = [
         LoadImaged(keys=["image", "label"]),
         AddChanneld(keys=["image", "label"]),
-        #AsChannelFirstd(keys=("dist_map")), # same as data_dict['dist_map'].permute(3, 0, 1, 2)
         ConvertLabel(keys='label'),
         Spacingd(
             keys=["image", "label"],
@@ -158,11 +148,6 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
 
     ################################################################################################
 
-    # Test transforms (same as Validation Transforms)
-    # test_transforms = val_transforms
-
-    ################################################################################################
-
     # get datasets
     train_ds = CacheDataset(
         data=train_data_dicts,
@@ -179,13 +164,6 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
         num_workers=8,
         progress=show_verbose
     )
-
-    '''test_ds = CacheDataset(
-        data=test_data_dicts,
-        transform=test_transforms,
-        num_workers=8,
-        progress=show_verbose
-    )'''
 
     num_classes = 8
 
