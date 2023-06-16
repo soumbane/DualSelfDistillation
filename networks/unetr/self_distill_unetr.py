@@ -32,6 +32,7 @@ class SelfDistilUNETR(nn.Module):
         self_distillation: bool = False,
         mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
         interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
+        multiple_upsample: bool = True,
         use_feature_maps: bool = False,
         feature_size: int = 16, # 16 used for MSD-BraTS and MMWHS(previous)
         hidden_size: int = 768,
@@ -206,6 +207,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 8,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_2_dec = DeepUp(
@@ -215,6 +217,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 16,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )       
 
             self.deep_3_enc = DeepUp(
@@ -224,6 +227,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 4,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_3_dec = DeepUp(
@@ -233,6 +237,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 8,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_4_enc = DeepUp(
@@ -242,6 +247,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 2,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_4_dec = DeepUp(
@@ -251,6 +257,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 4,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_5_enc = DeepUp(
@@ -260,6 +267,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 1,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_5_dec = DeepUp(
@@ -269,6 +277,7 @@ class SelfDistilUNETR(nn.Module):
             scale_factor = 2,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
         ###############################################
@@ -282,6 +291,7 @@ class SelfDistilUNETR(nn.Module):
                 scale_factor=2,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
             )
 
             self.deep_4_f = DeepUp(
@@ -291,6 +301,7 @@ class SelfDistilUNETR(nn.Module):
                 scale_factor=4,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
             )
 
             self.deep_3_f = DeepUp(
@@ -300,6 +311,7 @@ class SelfDistilUNETR(nn.Module):
                 scale_factor=8,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
             )
 
             ###############################################

@@ -39,6 +39,7 @@ class SelfDistilSwinUNETR(nn.Module):
         self_distillation: bool = False,
         mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
         interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
+        multiple_upsample: bool = True,
         norm_name: Union[Tuple, str] = "instance",
         drop_rate: float = 0.0,
         attn_drop_rate: float = 0.0,
@@ -240,6 +241,7 @@ class SelfDistilSwinUNETR(nn.Module):
             scale_factor = 1,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_enc1 = DeepUp(
@@ -249,6 +251,7 @@ class SelfDistilSwinUNETR(nn.Module):
             scale_factor = 2,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_enc2 = DeepUp(
@@ -258,6 +261,7 @@ class SelfDistilSwinUNETR(nn.Module):
             scale_factor = 4,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_enc3 = DeepUp(
@@ -267,6 +271,7 @@ class SelfDistilSwinUNETR(nn.Module):
             scale_factor = 8,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_enc4 = DeepUp(
@@ -276,6 +281,7 @@ class SelfDistilSwinUNETR(nn.Module):
             scale_factor = 16,
             mode=mode, 
             interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
             )
 
             self.deep_dec4 = self.deep_enc4

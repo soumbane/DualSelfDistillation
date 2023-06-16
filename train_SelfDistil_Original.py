@@ -63,7 +63,7 @@ if __name__ == "__main__":
     ## Initialize the UNETR model
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)
 
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only
+    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only
 
     ##########################################################################################################
     ## Initialize the nnUNet model
@@ -88,13 +88,14 @@ if __name__ == "__main__":
         self_distillation_num=4,
         mode=UpsampleMode.NONTRAINABLE, 
         interp_mode=InterpolateMode.BILINEAR,
+        multiple_upsample=True,
         dataset = "MMWHS",
         res_block=True,
         )
     
     ##########################################################################################################
     ## Initialize the SwinUNETR model
-    # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR)  # MMWHS CT only
+    # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True)  # MMWHS CT only
 
     ##########################################################################################################
 

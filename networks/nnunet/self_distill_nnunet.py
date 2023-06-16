@@ -105,6 +105,7 @@ class SelfDistilDynUNet(nn.Module):
         self_distillation_num: int = 4,
         mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
         interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
+        multiple_upsample: bool = True,
         dataset: str = "MMWHS",
         res_block: bool = False,
         trans_bias: bool = False,
@@ -154,6 +155,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 16,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) 
                 
                 self.deep_2 = DeepUp(
@@ -163,6 +165,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 8,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) 
 
                 self.deep_3 = DeepUp(
@@ -172,6 +175,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 4,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) 
 
                 self.deep_4 = DeepUp(
@@ -181,6 +185,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 2,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 )
 
                 self.deep_5 = DeepUp(
@@ -190,6 +195,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 1,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) 
 
             elif dataset == "MSD-BraTS":
@@ -201,6 +207,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 16,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) # for MSD-BraTS
 
                 
@@ -211,6 +218,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 8,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) # for MSD-BraTS
 
                 
@@ -221,6 +229,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 4,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) # for MSD-BraTS
 
                     
@@ -231,6 +240,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 2,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) # for MSD-BraTS
                 
                 self.deep_6 = DeepUp(
@@ -240,6 +250,7 @@ class SelfDistilDynUNet(nn.Module):
                 scale_factor = 1,
                 mode=mode, 
                 interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
                 ) # for MSD-BraTS
         
             else:
