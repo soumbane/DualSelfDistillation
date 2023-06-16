@@ -68,31 +68,33 @@ if __name__ == "__main__":
     ##########################################################################################################
     ## Initialize the nnUNet model
 
-    # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
-    # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
-    # filters = [32,64,128,256,320]  # originally used (for MMWHS)
-    # # filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations
+    kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
+    strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
+    filters = [32,64,128,256,320]  # originally used (for MMWHS)
+    # filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations
 
-    # model = SelfDistilnnUNet(
-    #     spatial_dims = 3,
-    #     in_channels = in_channels,
-    #     out_channels = num_classes,
-    #     kernel_size = kernel_size,
-    #     strides = strides,
-    #     upsample_kernel_size = strides[1:],
-    #     filters=filters,
-    #     norm_name="instance",
-    #     deep_supervision=False,
-    #     deep_supr_num=3,
-    #     self_distillation=True,
-    #     self_distillation_num=4,
-    #     dataset = "MMWHS",
-    #     res_block=True,
-    #     )
+    model = SelfDistilnnUNet(
+        spatial_dims = 3,
+        in_channels = in_channels,
+        out_channels = num_classes,
+        kernel_size = kernel_size,
+        strides = strides,
+        upsample_kernel_size = strides[1:],
+        filters=filters,
+        norm_name="instance",
+        deep_supervision=False,
+        deep_supr_num=3,
+        self_distillation=True,
+        self_distillation_num=4,
+        mode=UpsampleMode.NONTRAINABLE, 
+        interp_mode=InterpolateMode.BILINEAR,
+        dataset = "MMWHS",
+        res_block=True,
+        )
     
     ##########################################################################################################
     ## Initialize the SwinUNETR model
-    model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR)  # MMWHS CT only
+    # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR)  # MMWHS CT only
 
     ##########################################################################################################
 
@@ -103,8 +105,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS (nnUnet)
 
     # initialize learning rate scheduler (lr used by MMWHS challenge winner)
-    # lr_step = max(int(config.epochs / 6), 1)  # for nnUNet and UNETR (MMWHS-CT)
-    lr_step = max(int(config.epochs / 8), 1)  # ONLY for SwinUNETR (MMWHS-CT)
+    lr_step = max(int(config.epochs / 6), 1)  # for nnUNet and UNETR (MMWHS-CT)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5) # used for MMWHS
     # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
 
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     loss_fn: Union[losses.Loss, dict[str, losses.Loss]]
 
     # Hyper-parameters for Self Distillation
-    alpha_KL: float = 1.0  # weight of KL Div Loss Term (for UNETR/nnUNet)
+    alpha_KL: float = 1.0  # weight of KL Div Loss Term (for UNETR/nnUNet/SwinUNETR)
 
     # lambda_feat: float = 0.0001  # weight of L2 Loss Term between feature maps
     temperature: int = 3 # divided by temperature (T) to smooth logits before softmax (required for KL Div)
@@ -198,7 +199,7 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    manager = Manager.from_checkpoint("experiments/CT_MMWHS_SwinUNETR_SelfDist_Original_Fold1.exp/best.model") # for Self Distillation Original
+    manager = Manager.from_checkpoint("experiments/CT_MMWHS_nnUnet_SelfDist_Original_Fold1_multi_upsample_NON_trainable.exp/best.model") # for Self Distillation Original
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model
