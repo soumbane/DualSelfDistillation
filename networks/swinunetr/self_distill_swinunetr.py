@@ -14,7 +14,11 @@ from monai.networks.blocks import UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
 from monai.utils import ensure_tuple_rep
 from monai.utils import UpsampleMode, InterpolateMode
 
+# Relative import for final training model
 from .swin_unetr_blocks import SwinTransformer
+
+# Absolute import for testing this script
+# from swin_unetr_blocks import SwinTransformer
 
 # Relative import for final training model
 from .deepUp import DeepUp
@@ -35,7 +39,7 @@ class SelfDistilSwinUNETR(nn.Module):
         out_channels: int,
         depths: Sequence[int] = (2, 2, 2, 2),
         num_heads: Sequence[int] = (3, 6, 12, 24),
-        feature_size: int = 24,
+        feature_size: int = 36,
         self_distillation: bool = False,
         mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
         interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
@@ -416,7 +420,7 @@ if __name__ == '__main__':
         img_size = (96,96,96),
         in_channels = 1,
         out_channels = 8,
-        feature_size=48,    
+        feature_size=36,    
         self_distillation=True,
         mode=UpsampleMode.DECONV, 
         interp_mode=InterpolateMode.BILINEAR,     

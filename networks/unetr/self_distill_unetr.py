@@ -479,6 +479,9 @@ class SelfDistilUNETR(nn.Module):
             else:
                 # Full KL Div WITHOUT feature maps - includes both encoders and decoders
                 out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4)
+
+                # For Deep Supervision ONLY - currently done for MMWHS CT with UNETR
+                # out = (out_main, out_dec3, out_dec2, out_dec1)
             
         elif self.training and not self.self_distillation and not self.use_feature_maps:
             # For Basic UNETR ONLY (NO Self-Distillation)

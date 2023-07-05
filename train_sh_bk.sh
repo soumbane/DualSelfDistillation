@@ -1,3 +1,6 @@
+## Recent backup
+# python train_SelfDistil_Original.py /home/share/Data/Data_MMWHS_All/CT _ --img_size 96 96 96 --batch_size 1 --epochs 600 --experiment CT_MMWHS_UNETR_SelfDist_DecOnlyAblation_Fold4.exp --training_split 4 --device cuda:1 --show_verbose
+
 ######################################################################################################################
 ############################################## UNETR/nnUNET (MMWHS) ##################################################
 ######################################################################################################################

@@ -81,9 +81,10 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
             return loss
 
         ############################################################################################################
+        loss = 0
         ## Decoder Teacher-Student
         ## For KL Div between softmax(out_dec1) [target/teacher] and log_softmax((out_dec2,out_dec3)) [input/students]
-        loss = 0
+        
         # Training Mode
         # out_dec1: Teacher model output (deepest decoder)
         target_logits: torch.Tensor = input["out"][4] # for UNETR/nnUnet

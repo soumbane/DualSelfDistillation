@@ -45,7 +45,7 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     ## Divide the 20 patients for 5-fold Cross-Validation
 
     # Patient 1-4 (First 4 patients) for validation - Fold 1
-    train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
+    # train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
 
     # Patient 5-8 for validation - Fold 2
     # train_data_dicts, val_data_dicts = data_dicts[:train_split] + data_dicts[train_split+4:], data_dicts[train_split:train_split+4]
@@ -54,7 +54,7 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     # train_data_dicts, val_data_dicts = data_dicts[:train_split+4] + data_dicts[train_split+4*2:], data_dicts[train_split+4:train_split+4*2] 
 
     # Patient 13-16 for validation - Fold 4
-    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4*2] + data_dicts[train_split+4*3:], data_dicts[train_split+4*2:train_split+4*3] 
+    train_data_dicts, val_data_dicts = data_dicts[:train_split+4*2] + data_dicts[train_split+4*3:], data_dicts[train_split+4*2:train_split+4*3] 
 
     # Patient 17-20 for validation - Fold 5
     # train_data_dicts, val_data_dicts = data_dicts[:train_split+4*3], data_dicts[train_split+4*3:] 
@@ -152,7 +152,7 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     train_ds = CacheDataset(
         data=train_data_dicts,
         transform=train_transforms,
-        num_workers=8,
+        num_workers=4,
         cache_num=2,
         cache_rate=1.0,
         progress=show_verbose
@@ -161,7 +161,7 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     val_ds = CacheDataset(
         data=val_data_dicts,
         transform=val_transforms,
-        num_workers=8,
+        num_workers=4,
         progress=show_verbose
     )
 
