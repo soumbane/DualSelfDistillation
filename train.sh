@@ -1,1 +1,1 @@
-python train_SelfDistil_Original.py /home/share/Data/Data_MMWHS_All/CT _ --img_size 96 96 96 --batch_size 1 --epochs 600 --experiment CT_MMWHS_UNETR_SelfDist_DecOnlyAblation_Fold5.exp --training_split 4 --device cuda:1 --show_verbose
+python train_basic.py /home/neil/Lab_work/Medical_Image_Segmentation/Data_MSD_BraTS _ --img_size 128 128 128 --batch_size 1 --epochs 325 --experiment test.exp --training_split 24 --device cuda:0 --show_verbose

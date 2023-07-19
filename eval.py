@@ -42,8 +42,8 @@ fold_no = "4"
 fold = "Fold_" + fold_no
 
 ## choose best or last model
-# saved_model = "last"
-saved_model = "best"
+saved_model = "last"
+# saved_model = "best"
 
 device = "cuda:0"
 
@@ -172,16 +172,19 @@ if mode == "testing": print("Results on the Test Set ...")
 print(".......")
 print(summary)
 
-'''## Generate Model Predictions
-# patient_id = 2 # Select patient for whom to generate predictions (for MMWHS-CT) - Main Paper
-patient_id = 1 # Select patient for whom to generate predictions (for MMWHS-CT)
+## Generate Model Predictions
+# patient_id = 2 # Select patient for whom to generate predictions (for MMWHS-CT)
+# patient_id = 3 # Select patient for whom to generate predictions (for MMWHS-CT)
+# patient_id = 0 # Select patient for whom to generate predictions (for MMWHS-CT)
+# patient_id = 1 # Select patient for whom to generate predictions (for MMWHS-CT)
 
-# patient_id = 4 # Select patient for whom to generate predictions (for MSD-BraTS) - Main Paper
+patient_id = 22 # Select patient for whom to generate predictions (for MSD-BraTS)
+# patient_id = 4 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 18 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 2 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 5 # Select patient with worst label 2 preds
 
-preds = manager.predict(test_dataset, device=torch.device("cuda:0"), use_multi_gpus=False, show_verbose=True)
+preds = manager.predict(test_dataset, device=torch.device(device), use_multi_gpus=False, show_verbose=True) # type:ignore
 # print(preds[patient_id].shape)
 preds_1 = preds[patient_id].squeeze(0)
 # print(preds_1.shape)
@@ -189,7 +192,7 @@ preds_f = torch.argmax(preds_1, dim=0)
 # print(preds_f.shape)
 
 ## Save Model Predictions
-out_dir = os.path.join(data_dir, "Predicted_Labels") 
+out_dir = os.path.join(root, "Predicted_Labels_TMI") 
 
 ## Define your case
 if train_type == "Basic":
@@ -219,18 +222,26 @@ loader = LoadImage()
 
 img = loader(load_path)
 print(f"Loaded Image Shape: {img[0].shape}")
+print("\n")
 
 # Print the Dice/HD of all classes for all samples
-print(f"Entire Val Dice Matrix (no of samples x classes): {manager.metric_fns['val_dice'].results.squeeze(1)}") # type:ignore
-print(f"Entire Val HD Matrix (no of samples x classes): {manager.metric_fns['val_hd'].results.squeeze(1)}") # type:ignore
+print(f"Entire Val Dice Matrix (no of samples x classes):\n {manager.metric_fns['val_dice'].results.squeeze(1)}") # type:ignore
+print(f"Entire Val HD Matrix (no of samples x classes):\n {manager.metric_fns['val_hd'].results.squeeze(1)}") # type:ignore
+print(f"Entire Val MSD Matrix (no of samples x classes):\n {manager.metric_fns['val_msd'].results.squeeze(1)}") # type:ignore
+
+print("\n")
 
 # Mean of Dice/HD for all samples in validation set (all classes)
 print(f"Mean Val Dice (for all classes of all samples): {manager.metric_fns['val_dice'].results.squeeze(1).mean()}") # type:ignore
 print(f"Mean Val HD (for all classes of all samples): {manager.metric_fns['val_hd'].results.squeeze(1).mean()}") # type:ignore
+print(f"Mean Val MSD (for all classes of all samples): {manager.metric_fns['val_msd'].results.squeeze(1).mean()}") # type:ignore
+print("\n")
 
 # Std Dev of Dice/HD for all samples in validation set (all classes)
 print(f"Std of Val Dice (for all classes of all samples): {manager.metric_fns['val_dice'].results.squeeze(1).std()}") # type:ignore
 print(f"Std of Val HD (for all classes of all samples): {manager.metric_fns['val_hd'].results.squeeze(1).std()}") # type:ignore
+print(f"Std of Val MSD (for all classes of all samples): {manager.metric_fns['val_msd'].results.squeeze(1).std()}") # type:ignore
+print("\n")
 
 num_foreground_classes = num_classes - 1
 print(f"No. of Foreground classes: {num_foreground_classes}")
@@ -239,8 +250,11 @@ for class_id in range(num_foreground_classes):
     # Mean of Dice/HD for class_id of all samples in validation set (individual classes)
     print(f"Mean Val Dice of foreground class {class_id} across all val samples: {manager.metric_fns['val_dice'].results.squeeze(1).mean(0)[class_id]}") # type:ignore
     print(f"Mean Val HD of foreground class {class_id} across all val samples:: {manager.metric_fns['val_hd'].results.squeeze(1).mean(0)[class_id]}") # type:ignore
+    print(f"Mean Val MSD of foreground class {class_id} across all val samples:: {manager.metric_fns['val_msd'].results.squeeze(1).mean(0)[class_id]}") # type:ignore
 
     # Std of Dice/HD for class_id of all samples in validation set (individual classes)
     print(f"Std of Val Dice of foreground class {class_id} across all val samples: {manager.metric_fns['val_dice'].results.squeeze(1).std(0)[class_id]}") # type:ignore
-    print(f"Std of Val HD of foreground class {class_id} across all val samples: {manager.metric_fns['val_hd'].results.squeeze(1).std(0)[class_id]}") # type:ignore'''
+    print(f"Std of Val HD of foreground class {class_id} across all val samples: {manager.metric_fns['val_hd'].results.squeeze(1).std(0)[class_id]}") # type:ignore
+    print(f"Std of Val MSD of foreground class {class_id} across all val samples: {manager.metric_fns['val_msd'].results.squeeze(1).std(0)[class_id]}") # type:ignore
+    print("\n")
 

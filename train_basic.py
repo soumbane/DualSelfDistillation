@@ -59,14 +59,14 @@ if __name__ == "__main__":
 
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
 
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only Ablation
+    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only Ablation and MSD-BraTS
     
     ##########################################################################################################
     ## Initialize the nnUNet model
     # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
     # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
-    # filters = [32,64,128,256,320]  # originally used for MMWHS
-    # # filters = [16,32,64,128,256] # try this for MSD-BraTS due to memory limitations
+    # # filters = [32,64,128,256,320]  # originally used for MMWHS
+    # filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations
 
     # model = SelfDistilnnUNet(
     #     spatial_dims = 3,
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic_filters16_Ablation_Fold4.exp/best.model") 
+    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic_filters16_Ablation_Fold5.exp/best.model") 
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model
