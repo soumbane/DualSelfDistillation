@@ -14,31 +14,31 @@ import data
 from monai.transforms import LoadImage, SaveImage
 
 ## Select Dataset
-# dataset = "MMWHS"
-dataset = "MSD_BraTS"
+dataset = "MMWHS"
+# dataset = "MSD_BraTS"
 
 ## Set Modality
-# modality = "CT" # for MMWHS: Please set scale_intensity_ranged = True for MMWHS CT in data loading file 
+modality = "CT" # for MMWHS: Please set scale_intensity_ranged = True for MMWHS CT in data loading file 
 # modality = "MR" # for MMWHS: Please set scale_intensity_ranged = False for MMWHS MR in data loading file
-modality = "multimodalMR" # for MSD_BraTS
+# modality = "multimodalMR" # for MSD_BraTS
 
 ## Set Testing Type
-# mode = "validation"
-mode = "testing"
+mode = "validation"
+# mode = "testing"
 
 ## Set Pre-trained Model Type
-train_type = "Basic"
+# train_type = "Basic"
 # train_type = "Deep_Super"
-# train_type = "Self_Distill_Original"
+train_type = "Self_Distill_Original"
 # train_type = "Self_Distill_DistMaps"
 
 ## Set Pre-trained Model Architecture
 # arch = "UNETR"
-arch = "SwinUNETR"
-# arch = "nnUnet"
+# arch = "SwinUNETR"
+arch = "nnUnet"
 
 ## Fold number for MMWHS dataset ONLY
-fold_no = "4"
+fold_no = "5"
 fold = "Fold_" + fold_no
 
 ## choose best or last model
@@ -63,12 +63,12 @@ else:
 ## Important: Please set scale_intensity_ranged = True for CT and scale_intensity_ranged = False for MR in both data loading files challenge.py and challenge_dist_map.py. These are the preprocessing steps needed for inference (validation and testing)
 
 if train_type == "Basic":
-    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")
 
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_Basic.exp/last.model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_Basic.exp/last.model")
 
-    # print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality with {saved_model} saved model on fold {fold_no}....")
-    print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
+    print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality with {saved_model} saved model on fold {fold_no}....")
+    # print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
 
 elif train_type == "Deep_Super":
     best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_DeepSuperOnly.exp/best.model")
@@ -77,13 +77,13 @@ elif train_type == "Deep_Super":
     print(f"{mode} with the Basic {arch} architecture with Deep Supervision on {dataset} dataset with {modality} modality ....")
 
 elif train_type == "Self_Distill_Original":
-    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
 
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_SelfDist_Original.exp/last.model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_SelfDist_Original.exp/last.model")
     # best_model_path = os.path.join("experiments", "CT_MMWHS_nnUnet_SelfDist_Original_Fold1_multi_upsample_trainable.exp/last.model")
 
-    # print(f"{mode} with the {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality with {saved_model} saved model on fold {fold_no}....")
-    print(f"{mode} with the {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
+    print(f"{mode} with the {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality with {saved_model} saved model on fold {fold_no}....")
+    # print(f"{mode} with the {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
 
 elif train_type == "Self_Distill_DistMaps":
     best_model_path = os.path.join("experiments", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", modality + "_" + dataset + "_" + arch + "_SelfDist_DistMaps.exp/best.model")
@@ -175,10 +175,10 @@ print(summary)
 ## Generate Model Predictions
 # patient_id = 2 # Select patient for whom to generate predictions (for MMWHS-CT)
 # patient_id = 3 # Select patient for whom to generate predictions (for MMWHS-CT)
-# patient_id = 0 # Select patient for whom to generate predictions (for MMWHS-CT)
+patient_id = 0 # Select patient for whom to generate predictions (for MMWHS-CT)
 # patient_id = 1 # Select patient for whom to generate predictions (for MMWHS-CT)
 
-patient_id = 22 # Select patient for whom to generate predictions (for MSD-BraTS)
+# patient_id = 22 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 4 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 18 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 2 # Select patient for whom to generate predictions (for MSD-BraTS)

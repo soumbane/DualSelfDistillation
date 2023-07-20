@@ -54,10 +54,10 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     # train_data_dicts, val_data_dicts = data_dicts[:train_split+4] + data_dicts[train_split+4*2:], data_dicts[train_split+4:train_split+4*2] 
 
     # Patient 13-16 for validation - Fold 4
-    train_data_dicts, val_data_dicts = data_dicts[:train_split+4*2] + data_dicts[train_split+4*3:], data_dicts[train_split+4*2:train_split+4*3] 
+    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4*2] + data_dicts[train_split+4*3:], data_dicts[train_split+4*2:train_split+4*3] 
 
     # Patient 17-20 for validation - Fold 5
-    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4*3], data_dicts[train_split+4*3:] 
+    train_data_dicts, val_data_dicts = data_dicts[:train_split+4*3], data_dicts[train_split+4*3:] 
     
     ##############################################################################################################
 
