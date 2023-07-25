@@ -22,7 +22,7 @@ from networks import SelfDistillUNETRWithDictOutput as SelfDistilUNETR
 from networks import SelfDistillnnUNetWithDictOutput as SelfDistilnnUNet
 from torchmanager import callbacks, losses
 
-from loss_functions import Self_Distillation_Loss_Dice, Self_Distillation_Loss_CE, PixelWiseKLDiv, Self_Distillation_Loss_KL, Self_Distillation_Loss_L2
+from loss_functions import Self_Distillation_Loss_Dice, PixelWiseKLDiv, Self_Distillation_Loss_KL, Self_Distillation_Loss_L2
 
 
 if __name__ == "__main__":
@@ -86,9 +86,6 @@ if __name__ == "__main__":
     # Initilialize Loss Functions
     loss_fn: Union[losses.Loss, dict[str, losses.Loss]]
 
-    # Initial weights for cross-entropy (CE) term (L_CE)
-    eta_ce_init = 0.1086 # at the end of 290 epochs
-
     # Hyper-parameters for Self Distillation
     alpha_KL: float = 1.0  # weight of KL Div Loss Term (for UNETR/nnUNet)
 
@@ -102,19 +99,11 @@ if __name__ == "__main__":
     # Dice Loss Only between GT Labels(target="out") [target] and softmax(out_dec1,out_dec2,out_dec3,out_dec4) [input]
     loss_dice = Self_Distillation_Loss_Dice([
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_main and GT labels
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=0.0)), #out_dec4 and GT labels 
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=0.0)), #out_dec3 and GT labels
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=0.0)), #out_dec2 and GT labels
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=0.0)), #out_dec1 and GT labels
+        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec4 and GT labels 
+        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec3 and GT labels
+        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec2 and GT labels
+        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec1 and GT labels
         ], weight=1.0, target="out")
-
-    # CE Loss Only between GT Labels(target="out") [target] and softmax(out_dec1,out_dec2,out_dec3,out_dec4) [input]
-    loss_dice_ce = Self_Distillation_Loss_CE([        
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=0.0, lambda_ce=1.0)), #out_dec4 and GT labels
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=0.0, lambda_ce=1.0)), #out_dec3 and GT labels
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=0.0, lambda_ce=1.0)), #out_dec2 and GT labels
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=0.0, lambda_ce=1.0)), #out_dec1 and GT labels
-        ], weight=eta_ce_init, target="out")
 
     # Self Distillation from deepest encoder/decoder (out_enc4/out_dec1): Teacher (T), to shallower encoders/decoders (out_enc2/out_dec2,out_enc3/out_dec3,out_dec4/out_enc1): Students (S)  
     # For KL Div between softmax(out_dec1/out_enc4) [target] and log_softmax((out_dec2/out_enc3,out_dec3/out_enc2,out_dec4/out_enc1)) [input]
@@ -126,7 +115,6 @@ if __name__ == "__main__":
 
     loss_fn = {
         "dice": loss_dice,
-        "ce": loss_dice_ce,
         "KL": loss_KL
     }
    
@@ -152,21 +140,10 @@ if __name__ == "__main__":
 
     last_ckpt_callback = callbacks.LastCheckpoint(manager, last_ckpt_dir)
     besti_ckpt_callback = callbacks.BestCheckpoint("dice", manager, best_ckpt_dir)
-    
-    ##############################################################################################################
-    # Decease cross-entropy weight by this amount every epoch (To reduce L_CE for L_DCE term)
-    decr_eta_ce = 9.7818e-4 # decrease from 0.1086 to 0.001 for 110 epochs (total 400 epochs) (for UNETR with MSD-BraTS from checkpoint)
-
-    def getw_ce(e):
-        return (loss_fn["ce"].weight - decr_eta_ce)
-
-    weights_callback_ce = callbacks.LambdaDynamicWeight(getw_ce, loss_fn["ce"], writer=tensorboard_callback.writer, name='ce_weight')
-
-    ##############################################################################################################
 
     # Final callbacks list
     # callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, lr_scheduler_callback, weights_callback_ce]
-    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, weights_callback_ce]
+    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback]
 
     # train
     manager.fit(training_dataset, config.epochs, val_dataset=validation_dataset, device=config.device, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, show_verbose=config.show_verbose)
