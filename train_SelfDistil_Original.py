@@ -31,7 +31,7 @@ from torch.backends import cudnn
 from utils import count_parameters
 
 # initialization
-seed = 10
+seed = 100
 random.freeze_seed(seed)
 cudnn.benchmark = False 
 cudnn.deterministic = True  
