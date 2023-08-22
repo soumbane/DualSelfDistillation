@@ -39,7 +39,7 @@ python train_SelfDistil_Original.py /Path/to/MMWHS/Data/Data_MMWHS_All/CT _ --im
 
 ## Testing
 
-1. The pre-trained models are stored in `experiments/` folder. For example: the pretrained model for SwinUNETR with DSD wll be stored in the folder `experiments/multimodalMR_MSD_BraTS_SwinUNETR_SelfDist_Original.exp`.
+1. The pre-trained models are stored in `experiments/` folder. For example: the pretrained model for SwinUNETR with DSD framework attached (with MSD-BraTS data) will be stored in the folder `experiments/multimodalMR_MSD_BraTS_SwinUNETR_SelfDist_Original.exp`.
 * The pretrained models are not included in this GitHub repository due to space limitations. It will be made available after the review period through a DropBox link.
 * Please include the path to the pretrained model inside the `eval.py` file for the testing.
 
