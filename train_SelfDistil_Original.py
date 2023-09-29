@@ -49,12 +49,12 @@ if __name__ == "__main__":
     last_ckpt_dir = os.path.join(config.experiment_dir, "last.model")
     
     # load dataset - Load MMWHS Challenge Data
-    # in_channels = 1
-    # training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
+    in_channels = 1
+    training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
 
     # load dataset - Load MSD-BraTS Data
-    in_channels = 4
-    training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
+    # in_channels = 4
+    # training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
         
     training_dataset = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=True, collate_fn=pad_list_data_collate)
     validation_dataset = DataLoader(validation_dataset, batch_size=1, collate_fn=pad_list_data_collate)
@@ -70,37 +70,37 @@ if __name__ == "__main__":
     ##########################################################################################################
     ## Initialize the nnUNet model
 
-    # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
-    # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
-    # # filters = [32,64,128,256,320]  # originally used (for MMWHS)
-    # filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations or MMWHS Ablation
+    # try the following to add one more layer to nnUnet (implemention of DynUnet from MONAI)
+    kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
+    strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
+    filters = [32,64,128,256,320,320] 
 
-    # model = SelfDistilnnUNet(
-    #     spatial_dims = 3,
-    #     in_channels = in_channels,
-    #     out_channels = num_classes,
-    #     kernel_size = kernel_size,
-    #     strides = strides,
-    #     upsample_kernel_size = strides[1:],
-    #     filters=filters,
-    #     norm_name="instance",
-    #     deep_supervision=False,
-    #     deep_supr_num=3,
-    #     self_distillation=True,
-    #     self_distillation_num=4,
-    #     mode=UpsampleMode.DECONV, 
-    #     interp_mode=InterpolateMode.BILINEAR,
-    #     multiple_upsample=True,
-    #     dataset = "MMWHS",
-    #     # dataset="MSD-BraTS",
-    #     res_block=True,
-    #     )
+    model = SelfDistilnnUNet(
+        spatial_dims = 3,
+        in_channels = in_channels,
+        out_channels = num_classes,
+        kernel_size = kernel_size,
+        strides = strides,
+        upsample_kernel_size = strides[1:],
+        filters=filters,
+        norm_name="instance",
+        deep_supervision=False,
+        deep_supr_num=3,
+        self_distillation=True,
+        self_distillation_num=5,
+        mode=UpsampleMode.DECONV, 
+        interp_mode=InterpolateMode.BILINEAR,
+        multiple_upsample=True,
+        dataset = "MMWHS",
+        # dataset="MSD-BraTS",
+        res_block=True,
+        )
     
     ##########################################################################################################
     ## Initialize the SwinUNETR model
     # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True)  # MMWHS CT only
 
-    model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=12, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True)  # MSD-BraTS
+    # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=12, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True)  # MSD-BraTS
 
     ##########################################################################################################
 
@@ -140,9 +140,10 @@ if __name__ == "__main__":
     # Self Distillation from deepest encoder/decoder (out_enc4/out_dec1): Teacher (T), to shallower encoders/decoders (out_enc2/out_dec2,out_enc3/out_dec3,out_dec4/out_enc1): Students (S)  
     # For KL Div between softmax(out_dec1/out_enc4) [target] and log_softmax((out_dec2/out_enc3,out_dec3/out_enc2,out_dec4/out_enc1)) [input]
     loss_KL = Self_Distillation_Loss_KL([ 
-        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec4/out_enc1 (S) & out_dec1/out_enc4 (T)
-        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec3/out_enc2 (S) & out_dec1/out_enc4 (T)
-        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec2/out_enc3 (S) & out_dec1/out_enc4 (T)
+        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec4/out_enc1 (S) & out_dec0/out_enc5 (T)
+        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec3/out_enc2 (S) & out_dec0/out_enc5 (T)
+        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec2/out_enc3 (S) & out_dec0/out_enc5 (T)
+        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec1/out_enc4 (S) & out_dec0/out_enc5 (T)
     ], weight=alpha_KL, include_background=True, T=temperature, learn_weights=False) # pass the entire dict NOT just "out"
 
     # For Deep Supervision and Self-Distillation between Encoders and Decoders
