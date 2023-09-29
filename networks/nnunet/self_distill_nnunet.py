@@ -148,6 +148,17 @@ class SelfDistilDynUNet(nn.Module):
 
         if self_distillation:
             if dataset == "MMWHS":
+
+                self.deep_0 = DeepUp(
+                spatial_dims = 3,
+                in_channels = 320,
+                out_channels = self.out_channels,
+                scale_factor = 32,
+                mode=mode, 
+                interp_mode=interp_mode,
+                multiple_upsample=multiple_upsample
+                ) 
+
                 self.deep_1 = DeepUp(
                 spatial_dims = 3,
                 in_channels = 320,
@@ -267,8 +278,8 @@ class SelfDistilDynUNet(nn.Module):
         if self.self_distillation: 
             if dataset == "MMWHS":
                 # for MMWHS
-                self.self_distillation_enc_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2])
-                self.self_distillation_dec_heads = nn.ModuleList([self.deep_4,self.deep_3,self.deep_2,self.deep_1])
+                self.self_distillation_enc_heads = nn.ModuleList([self.deep_5,self.deep_4,self.deep_3,self.deep_2,self.deep_1])
+                self.self_distillation_dec_heads = nn.ModuleList([self.deep_4,self.deep_3,self.deep_2,self.deep_1,self.deep_0])
 
             elif dataset == "MSD-BraTS":
                 # for MSD-BraTS
@@ -420,6 +431,7 @@ class SelfDistilDynUNet(nn.Module):
 
         out_main = self.output_block(out_layers)
 
+        # The if section is not used for 3D DSD approach
         if self.training and self.deep_supervision:
             out_all = [out_layers]
             for feature_map in self.heads:
@@ -429,22 +441,24 @@ class SelfDistilDynUNet(nn.Module):
         elif self.training and self.self_distillation:
             
             # nnUNet Encoder Bottleneck Outputs
-            out_enc4 = self.e_heads[3]  # Deepest Encoder
+            out_enc5 = self.e_heads[4]  # Deepest Encoder
+            out_enc4 = self.e_heads[3]  # Next Deepest Encoder
             out_enc3 = self.e_heads[2]  # Shallow Encoder
             out_enc2 = self.e_heads[1]  # Shallow Encoder
             out_enc1 = self.e_heads[0]  # Shallow Encoder
 
             # nnUNet Decoder Bottleneck Outputs
-            out_dec1 = self.d_heads[0]  # Deepest Decoder 
-            out_dec2 = self.d_heads[1]  # Shallow Decoder
-            out_dec3 = self.d_heads[2]  # Shallow Decoder
-            out_dec4 = self.d_heads[3]  # Shallow Decoder
+            out_dec0 = self.d_heads[0]  # Deepest Decoder 
+            out_dec1 = self.d_heads[1]  # Next Deepest Decoder 
+            out_dec2 = self.d_heads[2]  # Shallow Decoder
+            out_dec3 = self.d_heads[3]  # Shallow Decoder
+            out_dec4 = self.d_heads[4]  # Shallow Decoder
 
             # For Deep Supervision ONLY - currently done for MMWHS CT with nnUnet
-            # out = (out_main, out_dec3, out_dec2, out_dec1) 
+            # out = (out_main, out_dec3, out_dec2, out_dec1, out_dec0) 
             
             # For nnUNet with Self-Distillation
-            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4) # Full KL Div WITHOUT feature maps - includes both encoders and decoders (Also works with encoders only - just do not add the decoder KL divergence loss for encoders only)
+            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_dec0, out_enc1, out_enc2, out_enc3, out_enc4, out_enc5) # Full KL Div WITHOUT feature maps - includes both encoders and decoders (Also works with encoders only - just do not add the decoder KL divergence loss for encoders only)
 
         else: # For Basic nnUNet ONLY and validation mode
             out = out_main
@@ -550,10 +564,17 @@ class SelfDistilDynUNet(nn.Module):
 
 if __name__ == '__main__':
 
-    kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
-    strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
-    filters = [32,64,128,256,320]  # originally used for MMWHS
-    # filters = [16,32,64,128,256] # try this
+    # originally used for 3D DSD experiments
+    # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
+    # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
+    # filters = [32,64,128,256,320]  # originally used for MMWHS
+    # # filters = [16,32,64,128,256] # try this
+
+    # try the following to add one more layer to nnUnet (implemention of DynUnet from MONAI)
+    kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
+    strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
+    filters = [32,64,128,256,320,320] 
+    
 
     nnunet_with_self_distil = SelfDistilDynUNet(
         spatial_dims = 3,
@@ -566,8 +587,8 @@ if __name__ == '__main__':
         norm_name="instance",
         deep_supervision=False,
         deep_supr_num=3,
-        self_distillation=True,
-        self_distillation_num=4,
+        self_distillation=True, # for self-distillation and deep supervision
+        self_distillation_num=5, # the number of layers for self-distillation and deep supervision
         dataset="MMWHS",
         res_block=True,
         )
@@ -580,7 +601,7 @@ if __name__ == '__main__':
     print("Self Distil nnUNet input shape: ", x1.shape)
 
     x3 = nnunet_with_self_distil(x1)
-    print("Self Distil nnUNet output shape: ", x3[5].shape)
+    print("Self Distil nnUNet output shape: ", x3[10].shape)
 
     # x3 = nnunet_with_self_distil(x1)
     # print("Self Distil nnUNet output shape: ", x3.shape)
