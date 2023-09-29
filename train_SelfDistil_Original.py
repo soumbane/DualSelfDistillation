@@ -137,6 +137,8 @@ if __name__ == "__main__":
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec1 and GT labels
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec0 and GT labels
         ], weight=1.0, target="out", learn_weights=False)
+    
+    # The weights of the above Self_Distillation_Loss_Dice can be set to be different instead of constant - it has to be set in a list with increasing order [0.2,0.4,0.6,0.8,1.0] for [out_dec4, out_dec3, out_dec2, out_dec1, out_dec0] respectively; the weight for out_main is always 1.0
 
     # Self Distillation from deepest encoder/decoder (out_enc4/out_dec1): Teacher (T), to shallower encoders/decoders (out_enc2/out_dec2,out_enc3/out_dec3,out_dec4/out_enc1): Students (S)  
     # For KL Div between softmax(out_dec1/out_enc4) [target] and log_softmax((out_dec2/out_enc3,out_dec3/out_enc2,out_dec4/out_enc1)) [input]
@@ -146,6 +148,8 @@ if __name__ == "__main__":
         losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec2/out_enc3 (S) & out_dec0/out_enc5 (T)
         losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec1/out_enc4 (S) & out_dec0/out_enc5 (T)
     ], weight=alpha_KL, include_background=True, T=temperature, learn_weights=False) # pass the entire dict NOT just "out"
+
+    # The weights of the above Self_Distillation_Loss_KL can be set to be different instead of constant - it has to be set in a list with increasing order [0.4,0.6,0.8,1.0]
 
     # For Deep Supervision and Self-Distillation between Encoders and Decoders
     loss_fn = {
@@ -214,7 +218,7 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_SelfDist_filters16_Ablation_Fold5.exp/best.model") # for Self Distillation Original
+    manager = Manager.from_checkpoint("experiments/CT_MMWHS_nnUnet_test_more_layers.exp/best.model") # for Self Distillation Original
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model
