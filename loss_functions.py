@@ -86,8 +86,8 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         ## For KL Div between softmax(out_dec1) [target/teacher] and log_softmax((out_dec2,out_dec3)) [input/students]
         
         # Training Mode
-        # out_dec1: Teacher model output (deepest decoder)
-        target_logits: torch.Tensor = input["out"][4] # for UNETR/nnUnet
+        # out_dec0: Teacher model output (deepest decoder)
+        target_logits: torch.Tensor = input["out"][5] # for UNETR/nnUnet
                         
         target_logits = target_logits/self.T  # divided by temperature (T) to smooth logits before softmax
 
@@ -106,7 +106,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         for i, fn in enumerate(self.losses):
             assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             
-            # (B, num_cls, x,y,z): for Decoders - out_dec1 as Teacher and out_dec2, out_dec3 as students
+            # (B, num_cls, x,y,z): for Decoders - out_dec0 as Teacher and out_dec1, out_dec2, out_dec3, out_dec4 as students
             input_logits_before_log = (input["out"][i+1])/self.T  
 
             if not self.include_background:
@@ -126,8 +126,8 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         ## For KL Div between softmax(out_enc4) [target/teacher] and log_softmax((out_enc2,out_enc3)) [input/students]
         
         # Training Mode
-        # out_enc4: Teacher model output (deepest encoder)
-        target_logits: torch.Tensor = input["out"][8] # for UNETR/nnUnet
+        # out_enc5: Teacher model output (deepest encoder)
+        target_logits: torch.Tensor = input["out"][10] # for UNETR/nnUnet
                         
         target_logits = target_logits/self.T  # divided by temperature (T) to smooth logits before softmax
 
@@ -146,8 +146,8 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         for i, fn in enumerate(self.losses):
             assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             
-            # (B, num_cls, x,y,z): num_cls=7 (since excluding bkg class): for Encoders - out_enc4 as Teacher and out_enc2, out_enc3 as students
-            input_logits_before_log = (input["out"][i+5])/self.T  # for UNETR/nnUnet
+            # (B, num_cls, x,y,z): num_cls=7 (since excluding bkg class): for Encoders - out_enc5 as Teacher and out_enc1, out_enc2, out_enc3, out_enc4 as students
+            input_logits_before_log = (input["out"][i+6])/self.T  # for UNETR/nnUnet
 
             if not self.include_background:
                 input_logits_before_log = input_logits_before_log[:, 1:, ...]  # considering only foreground classes
