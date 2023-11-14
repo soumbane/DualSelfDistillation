@@ -60,6 +60,8 @@ if __name__ == "__main__":
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only
 
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # MMWHS CT only Ablation and MSD-BraTS
+
+    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=False, feature_size=64, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0) # just to test num of params of MSD-BraTS
     
     ##########################################################################################################
     ## Initialize the nnUNet model
@@ -88,11 +90,13 @@ if __name__ == "__main__":
     ## Initialize the SwinUNETR model
     # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=False)  # MMWHS CT only
 
-    model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=12, self_distillation=False)  # MSD-BraTS
+    # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=12, self_distillation=False)  # MSD-BraTS
 
     ##########################################################################################################
     ## Count model parameters
     print(f'The total number of model parameter is: {count_parameters(model)}')
+
+    raise ValueError("Stop here to check the model parameters")
 
     ##########################################################################################################
     

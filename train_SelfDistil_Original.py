@@ -49,12 +49,12 @@ if __name__ == "__main__":
     last_ckpt_dir = os.path.join(config.experiment_dir, "last.model")
     
     # load dataset - Load MMWHS Challenge Data
-    in_channels = 1
-    training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
+    # in_channels = 1
+    # training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
 
     # load dataset - Load MSD-BraTS Data
-    # in_channels = 4
-    # training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
+    in_channels = 4
+    training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
         
     training_dataset = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=True, collate_fn=pad_list_data_collate)
     validation_dataset = DataLoader(validation_dataset, batch_size=1, collate_fn=pad_list_data_collate)
@@ -65,36 +65,38 @@ if __name__ == "__main__":
 
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only
 
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only Ablation and MSD-BraTS
+    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only Ablation and MSD-BraTS
+
+    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=64, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # Just to see num of params for BraTS
 
     ##########################################################################################################
     ## Initialize the nnUNet model
 
     # try the following to add one more layer to nnUnet (implemention of DynUnet from MONAI)
-    kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
-    strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
-    filters = [32,64,128,256,320,320] 
+    # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
+    # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
+    # filters = [32,64,128,256,320,320] 
 
-    model = SelfDistilnnUNet(
-        spatial_dims = 3,
-        in_channels = in_channels,
-        out_channels = num_classes,
-        kernel_size = kernel_size,
-        strides = strides,
-        upsample_kernel_size = strides[1:],
-        filters=filters,
-        norm_name="instance",
-        deep_supervision=False,
-        deep_supr_num=3,
-        self_distillation=True,
-        self_distillation_num=5,
-        mode=UpsampleMode.DECONV, 
-        interp_mode=InterpolateMode.BILINEAR,
-        multiple_upsample=True,
-        dataset = "MMWHS",
-        # dataset="MSD-BraTS",
-        res_block=True,
-        )
+    # model = SelfDistilnnUNet(
+    #     spatial_dims = 3,
+    #     in_channels = in_channels,
+    #     out_channels = num_classes,
+    #     kernel_size = kernel_size,
+    #     strides = strides,
+    #     upsample_kernel_size = strides[1:],
+    #     filters=filters,
+    #     norm_name="instance",
+    #     deep_supervision=False,
+    #     deep_supr_num=3,
+    #     self_distillation=True,
+    #     self_distillation_num=5,
+    #     mode=UpsampleMode.DECONV, 
+    #     interp_mode=InterpolateMode.BILINEAR,
+    #     multiple_upsample=True,
+    #     dataset = "MMWHS",
+    #     # dataset="MSD-BraTS",
+    #     res_block=True,
+    #     )
     
     ##########################################################################################################
     ## Initialize the SwinUNETR model
@@ -106,6 +108,8 @@ if __name__ == "__main__":
 
     ## Count model parameters
     print(f'The total number of model parameter is: {count_parameters(model)}')
+
+    raise ValueError("Stop here to check the model parameters")
 
     # initialize optimizer, loss, metrics, and post processing
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS (nnUnet)
