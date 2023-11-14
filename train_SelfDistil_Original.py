@@ -156,7 +156,7 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    manager = Manager.from_checkpoint("experiments/CT_MMWHS_nnUnet_test_more_layers.exp/best.model") # for Self Distillation Original
+    manager = Manager.from_checkpoint("experiments/multimodalMR_MSD_BraTS_LargeUNETR_SelfDist.exp/best.model") # for Self Distillation Original
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model
