@@ -71,8 +71,8 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(128,128,128), train_split: in
             label_key="label",
             spatial_size=img_size,
             pos=1,
-            neg=0, # neg=0 & pos=1 to always pick a foreground voxel as center for random crop
-            num_samples=2, # 4 used for nnUnet/ try 2 for UNETR 
+            neg=1, # neg=0 & pos=1 to always pick a foreground voxel as center for random crop
+            num_samples=4, # 4 used for nnUnet/ try 2 or 4 for UNETR 
             image_key="image",
             image_threshold=0,
         ),

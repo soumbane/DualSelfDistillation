@@ -31,10 +31,10 @@ from torch.backends import cudnn
 from utils import count_parameters
 
 # initialization
-seed = 100
-random.freeze_seed(seed)
-cudnn.benchmark = False 
-cudnn.deterministic = True  
+# seed = 100
+# random.freeze_seed(seed)
+# cudnn.benchmark = False 
+# cudnn.deterministic = True  
 
 
 if __name__ == "__main__":
@@ -61,63 +61,15 @@ if __name__ == "__main__":
 
     ##########################################################################################################
     ## Initialize the UNETR model
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)
-
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only
-
-    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only Ablation and MSD-BraTS
-
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=64, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # Just to see num of params for BraTS
-
-    ##########################################################################################################
-    ## Initialize the nnUNet model
-
-    # try the following to add one more layer to nnUnet (implemention of DynUnet from MONAI)
-    # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]]
-    # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]]
-    # filters = [32,64,128,256,320,320] 
-
-    # model = SelfDistilnnUNet(
-    #     spatial_dims = 3,
-    #     in_channels = in_channels,
-    #     out_channels = num_classes,
-    #     kernel_size = kernel_size,
-    #     strides = strides,
-    #     upsample_kernel_size = strides[1:],
-    #     filters=filters,
-    #     norm_name="instance",
-    #     deep_supervision=False,
-    #     deep_supr_num=3,
-    #     self_distillation=True,
-    #     self_distillation_num=5,
-    #     mode=UpsampleMode.DECONV, 
-    #     interp_mode=InterpolateMode.BILINEAR,
-    #     multiple_upsample=True,
-    #     dataset = "MMWHS",
-    #     # dataset="MSD-BraTS",
-    #     res_block=True,
-    #     )
-    
-    ##########################################################################################################
-    ## Initialize the SwinUNETR model
-    # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True)  # MMWHS CT only
-
-    # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=12, self_distillation=True, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True)  # MSD-BraTS
+    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=64, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # for BraTS
 
     ##########################################################################################################
 
     ## Count model parameters
     print(f'The total number of model parameter is: {count_parameters(model)}')
 
-    raise ValueError("Stop here to check the model parameters")
-
     # initialize optimizer, loss, metrics, and post processing
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS (nnUnet)
-
-    # # initialize learning rate scheduler (lr used by MMWHS challenge winner)
-    lr_step = max(int(config.epochs / 6), 1)  # for nnUNet and UNETR (MMWHS-CT)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5) # used for MMWHS
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
 
     # Initilialize Loss Functions
     loss_fn: Union[losses.Loss, dict[str, losses.Loss]]
@@ -125,7 +77,6 @@ if __name__ == "__main__":
     # Hyper-parameters for Self Distillation
     alpha_KL: float = 1.0  # weight of KL Div Loss Term (for UNETR/nnUNet/SwinUNETR)
 
-    # lambda_feat: float = 0.0001  # weight of L2 Loss Term between feature maps
     temperature: int = 3 # divided by temperature (T) to smooth logits before softmax (required for KL Div)
     
     ## For Multiple Losses
@@ -139,18 +90,16 @@ if __name__ == "__main__":
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec3 and GT labels
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec2 and GT labels
         losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec1 and GT labels
-        losses.Loss(DiceCELoss(include_background=True, to_onehot_y=True, softmax=True, lambda_dice=1.0, lambda_ce=1.0)), #out_dec0 and GT labels
         ], weight=1.0, target="out", learn_weights=False)
     
-    # The weights of the above Self_Distillation_Loss_Dice can be set to be different instead of constant - it has to be set in a list with increasing order [0.2,0.4,0.6,0.8,1.0] for [out_dec4, out_dec3, out_dec2, out_dec1, out_dec0] respectively; the weight for out_main is always 1.0
+    # The weights of the above Self_Distillation_Loss_Dice can be set to be different instead of constant - it has to be set in a list with increasing order [0.4,0.6,0.8,1.0] for [out_dec4, out_dec3, out_dec2, out_dec1] respectively; the weight for out_main is always 1.0
 
     # Self Distillation from deepest encoder/decoder (out_enc4/out_dec1): Teacher (T), to shallower encoders/decoders (out_enc2/out_dec2,out_enc3/out_dec3,out_dec4/out_enc1): Students (S)  
     # For KL Div between softmax(out_dec1/out_enc4) [target] and log_softmax((out_dec2/out_enc3,out_dec3/out_enc2,out_dec4/out_enc1)) [input]
     loss_KL = Self_Distillation_Loss_KL([ 
-        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec4/out_enc1 (S) & out_dec0/out_enc5 (T)
-        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec3/out_enc2 (S) & out_dec0/out_enc5 (T)
-        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec2/out_enc3 (S) & out_dec0/out_enc5 (T)
-        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec1/out_enc4 (S) & out_dec0/out_enc5 (T)
+        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec4/out_enc1 (S) & out_dec1/out_enc4 (T)
+        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec3/out_enc2 (S) & out_dec1/out_enc4 (T)
+        losses.Loss(PixelWiseKLDiv(log_target=False)), #out_dec2/out_enc3 (S) & out_dec1/out_enc4 (T)
     ], weight=alpha_KL, include_background=True, T=temperature, learn_weights=False) # pass the entire dict NOT just "out"
 
     # The weights of the above Self_Distillation_Loss_KL can be set to be different instead of constant - it has to be set in a list with increasing order [0.4,0.6,0.8,1.0]
@@ -165,19 +114,6 @@ if __name__ == "__main__":
     # loss_fn = {
     #     "dice": loss_dice
     # }
-
-    '''# For L2 loss between feature maps/hints dec1_f/enc4_f [target: Teacher (T)] and feature maps (dec3_f/enc3_f,dec2_f/enc2_f) [input: Students (S)]
-    loss_L2 = Self_Distillation_Loss_L2([
-        losses.Loss(MSELoss(reduction="mean")), #dec3_f/enc2_f (S) and dec1_f/enc4_f (T)
-        losses.Loss(MSELoss(reduction="mean")), #dec2_f/enc3_f (S) and dec1_f/enc4_f (T)
-    ], weight=lambda_feat) # pass the entire dict NOT just "out"
-
-    loss_fn = {
-        "dice": loss_dice,
-        "ce": loss_dice_ce,
-        "KL": loss_KL,
-        "L2": loss_L2
-    }'''
    
     # Initialize Metrics
     dice_fn = metrics.CumulativeIterationMetric(DiceMetric(include_background=False, reduction="none", get_not_nans=False), target="out")
@@ -204,13 +140,11 @@ if __name__ == "__main__":
 
     last_ckpt_callback = callbacks.LastCheckpoint(manager, last_ckpt_dir)
     besti_ckpt_callback = callbacks.BestCheckpoint("dice", manager, best_ckpt_dir)
-    lr_scheduler_callback = callbacks.LrSchedueler(lr_scheduler, tf_board_writer=tensorboard_callback.writer)
-
+    
     ##############################################################################################################
 
     # Final callbacks list
-    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, lr_scheduler_callback]
-    # callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback]
+    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback]
 
     # train
     manager.fit(training_dataset, config.epochs, val_dataset=validation_dataset, device=config.device, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, show_verbose=config.show_verbose)

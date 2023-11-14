@@ -13,10 +13,10 @@ from monai.utils import ensure_tuple_rep
 from monai.utils import UpsampleMode, InterpolateMode
 
 # Relative import for final training model
-# from .deepUp import DeepUp
+from .deepUp import DeepUp
 
 # Absolute import for testing this script
-from deepUp import DeepUp
+# from deepUp import DeepUp
 
 class SelfDistilUNETR(nn.Module):
     """

@@ -87,7 +87,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         
         # Training Mode
         # out_dec0: Teacher model output (deepest decoder)
-        target_logits: torch.Tensor = input["out"][5] # for UNETR/nnUnet
+        target_logits: torch.Tensor = input["out"][4] # for UNETR/nnUnet
                         
         target_logits = target_logits/self.T  # divided by temperature (T) to smooth logits before softmax
 
@@ -127,7 +127,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
         
         # Training Mode
         # out_enc5: Teacher model output (deepest encoder)
-        target_logits: torch.Tensor = input["out"][10] # for UNETR/nnUnet
+        target_logits: torch.Tensor = input["out"][8] # for UNETR/nnUnet
                         
         target_logits = target_logits/self.T  # divided by temperature (T) to smooth logits before softmax
 
@@ -147,7 +147,7 @@ class Self_Distillation_Loss_KL(losses.MultiLosses):
             assert isinstance(fn, losses.Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             
             # (B, num_cls, x,y,z): num_cls=7 (since excluding bkg class): for Encoders - out_enc5 as Teacher and out_enc1, out_enc2, out_enc3, out_enc4 as students
-            input_logits_before_log = (input["out"][i+6])/self.T  # for UNETR/nnUnet
+            input_logits_before_log = (input["out"][i+5])/self.T  # for UNETR/nnUnet
 
             if not self.include_background:
                 input_logits_before_log = input_logits_before_log[:, 1:, ...]  # considering only foreground classes
