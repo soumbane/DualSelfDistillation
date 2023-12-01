@@ -27,15 +27,15 @@ modality = "multimodalMR" # for MSD_BraTS
 mode = "testing"
 
 ## Set Pre-trained Model Type
-# train_type = "Basic"
+train_type = "Basic"
 # train_type = "Deep_Super"
-train_type = "Self_Distill_Original"
+# train_type = "Self_Distill_Original"
 # train_type = "Self_Distill_DistMaps"
 
 ## Set Pre-trained Model Architecture
-arch = "UNETR"
+# arch = "UNETR"
 # arch = "SwinUNETR"
-# arch = "nnUnet"
+arch = "nnUnet"
 
 ## Fold number for MMWHS dataset ONLY
 fold_no = "5"
@@ -65,7 +65,11 @@ else:
 if train_type == "Basic":
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")
 
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_UNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_LargeUNETR_Basic.exp/best.model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_UNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_LargeUNETR_Basic.exp/best.model")
+
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_Basic.exp/best.model")
+
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_nnUnet_multimodalMR_models_final", "multimodalMR_MSD_BraTS_nnUnet_Basic.exp/best.model")
 
     # print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality with {saved_model} saved model on fold {fold_no}....")
     print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
@@ -80,7 +84,9 @@ elif train_type == "Self_Distill_Original":
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
 
     best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_UNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_LargeUNETR_SelfDist.exp/best.model")
-    # best_model_path = os.path.join("experiments", "CT_MMWHS_nnUnet_SelfDist_Original_Fold1_multi_upsample_trainable.exp/last.model")
+    
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_SelfDist_Original.exp/best.model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_nnUnet_multimodalMR_models_final", "multimodalMR_MSD_BraTS_nnUnet_SelfDist_Original.exp/best.model")
 
     # print(f"{mode} with the {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality with {saved_model} saved model on fold {fold_no}....")
     print(f"{mode} with the {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality with {saved_model} saved model ....")
@@ -178,9 +184,10 @@ print(summary)
 # patient_id = 0 # Select patient for whom to generate predictions (for MMWHS-CT)
 # patient_id = 1 # Select patient for whom to generate predictions (for MMWHS-CT)
 
-# patient_id = 22 # Select patient for whom to generate predictions (for MSD-BraTS)
-patient_id = 4 # Select patient for whom to generate predictions (for MSD-BraTS)
-# patient_id = 18 # Select patient for whom to generate predictions (for MSD-BraTS)
+# patient_id = 23 # Select patient for whom to generate predictions (for MSD-BraTS-SwinUNETR)
+# patient_id = 4 # Select patient for whom to generate predictions (for MSD-BraTS)
+# patient_id = 0 # Select patient for whom to generate predictions (for MSD-BraTS-large UNETR)
+patient_id = 18 # Select patient for whom to generate predictions (for MSD-BraTS-nnU-Net)
 # patient_id = 2 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 5 # Select patient with worst label 2 preds
 
