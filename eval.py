@@ -14,27 +14,27 @@ import data
 from monai.transforms import LoadImage, SaveImage
 
 ## Select Dataset
-# dataset = "MMWHS"
-dataset = "MSD_BraTS"
+dataset = "MMWHS"
+# dataset = "MSD_BraTS"
 
 ## Set Modality
-# modality = "CT" # for MMWHS: Please set scale_intensity_ranged = True for MMWHS CT in data loading file 
+modality = "CT" # for MMWHS: Please set scale_intensity_ranged = True for MMWHS CT in data loading file 
 # modality = "MR" # for MMWHS: Please set scale_intensity_ranged = False for MMWHS MR in data loading file
-modality = "multimodalMR" # for MSD_BraTS
+# modality = "multimodalMR" # for MSD_BraTS
 
 ## Set Testing Type
-# mode = "validation"
-mode = "testing"
+mode = "validation"
+# mode = "testing"
 
 ## Set Pre-trained Model Type
-# train_type = "Basic"
+train_type = "Basic"
 # train_type = "Deep_Super"
-train_type = "Self_Distill_Original"
+# train_type = "Self_Distill_Original"
 # train_type = "Self_Distill_DistMaps"
 
 ## Set Pre-trained Model Architecture
-# arch = "UNETR"
-arch = "nnUnet"
+arch = "UNETR"
+# arch = "nnUnet"
 
 ## Root path for experiments and pre-trained models
 root = "/home/neil/Lab_work/Medical_Image_Segmentation"
@@ -52,8 +52,11 @@ else:
 ## Important: Please set scale_intensity_ranged = True for CT and scale_intensity_ranged = False for MR in both data loading files challenge.py and challenge_dist_map.py. These are the preprocessing steps needed for inference (validation and testing)
 
 if train_type == "Basic":
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_Basic_Fold4.exp/best.model")
+
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_UNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_UNETR_Basic.exp/best.model")
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_nnUnet_multimodalMR_models_final", "multimodalMR_MSD_BraTS_nnUnet_Basic.exp/best.model")
+    
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_nnUnet_multimodalMR_models_final", "multimodalMR_MSD_BraTS_nnUnet_Basic.exp/best.model")
 
     print(f"{mode} with the Basic {arch} architecture on {dataset} dataset with {modality} modality ....")
 
@@ -64,9 +67,11 @@ elif train_type == "Deep_Super":
     print(f"{mode} with the Basic {arch} architecture with Deep Supervision on {dataset} dataset with {modality} modality ....")
 
 elif train_type == "Self_Distill_Original":
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_SelfDist_Original_Fold4.exp/best.model")
+
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_UNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_UNETR_SelfDist_Original.exp/best.model")
 
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_nnUnet_multimodalMR_models_final", "multimodalMR_MSD_BraTS_nnUnet_SelfDist_Original.exp/best.model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_nnUnet_multimodalMR_models_final", "multimodalMR_MSD_BraTS_nnUnet_SelfDist_Original.exp/best.model")
 
     print(f"{mode} with the Basic {arch} architecture with Dual self-distillation on {dataset} dataset with {modality} modality ....")
 
@@ -161,12 +166,12 @@ if mode == "testing": print("Results on the Test Set ...")
 print(".......")
 print(summary)
 
-'''## Generate Model Predictions
-# patient_id = 2 # Select patient for whom to generate predictions (for MMWHS-CT) - Main Paper
-patient_id = 1 # Select patient for whom to generate predictions (for MMWHS-CT)
+## Generate Model Predictions
+patient_id = 2 # Select patient for whom to generate predictions (for MMWHS-CT) - Main Paper
+# patient_id = 1 # Select patient for whom to generate predictions (for MMWHS-CT)
 
 # patient_id = 4 # Select patient for whom to generate predictions (for MSD-BraTS) - Main Paper
-# patient_id = 18 # Select patient for whom to generate predictions (for MSD-BraTS)
+# patient_id = 18 # Select patient for whom to generate predictions (for MSD-BraTS-nnU-Net)
 # patient_id = 2 # Select patient for whom to generate predictions (for MSD-BraTS)
 # patient_id = 5 # Select patient with worst label 2 preds
 
@@ -232,5 +237,5 @@ for class_id in range(num_foreground_classes):
 
     # Std of Dice/HD for class_id of all samples in validation set (individual classes)
     print(f"Std of Val Dice of foreground class {class_id} across all val samples: {manager.metric_fns['val_dice'].results.squeeze(1).std(0)[class_id]}") # type:ignore
-    print(f"Std of Val HD of foreground class {class_id} across all val samples: {manager.metric_fns['val_hd'].results.squeeze(1).std(0)[class_id]}") # type:ignore'''
+    print(f"Std of Val HD of foreground class {class_id} across all val samples: {manager.metric_fns['val_hd'].results.squeeze(1).std(0)[class_id]}") # type:ignore
 
