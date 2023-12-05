@@ -27,15 +27,15 @@ mode = "validation"
 # mode = "testing"
 
 ## Set Pre-trained Model Type
-train_type = "Basic"
+# train_type = "Basic"
 # train_type = "Deep_Super"
-# train_type = "Self_Distill_Original"
+train_type = "Self_Distill_Original"
 # train_type = "Self_Distill_DistMaps"
 
 ## Set Pre-trained Model Architecture
-arch = "UNETR"
+# arch = "UNETR"
 # arch = "SwinUNETR"
-# arch = "nnUnet"
+arch = "nnUnet"
 
 ## Fold number for MMWHS dataset ONLY
 fold_no = "4"
