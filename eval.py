@@ -27,9 +27,9 @@ mode = "validation"
 # mode = "testing"
 
 ## Set Pre-trained Model Type
-# train_type = "Basic"
+train_type = "Basic"
 # train_type = "Deep_Super"
-train_type = "Self_Distill_Original"
+# train_type = "Self_Distill_Original"
 # train_type = "Self_Distill_DistMaps"
 
 ## Set Pre-trained Model Architecture
@@ -42,8 +42,8 @@ fold_no = "4"
 fold = "Fold_" + fold_no
 
 ## choose best or last model
-# saved_model = "last"
-saved_model = "best"
+saved_model = "last"
+# saved_model = "best"
 
 device = "cuda:0"
 
@@ -64,9 +64,9 @@ else:
 
 if train_type == "Basic":
 
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_Basic_Fold4.exp/last.model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_Basic_Fold4.exp/last.model")
 
-    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")    
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")    
 
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_Basic.exp/last.model")
 
@@ -81,9 +81,9 @@ elif train_type == "Deep_Super":
 
 elif train_type == "Self_Distill_Original":
 
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_SelfDist_Original_Fold4.exp/last.model")
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_SelfDist_Original_Fold4.exp/last.model")
 
-    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
 
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_SelfDist_Original.exp/last.model")
     # best_model_path = os.path.join("experiments", "CT_MMWHS_nnUnet_SelfDist_Original_Fold1_multi_upsample_trainable.exp/last.model")
@@ -145,7 +145,7 @@ print(f'The best Dice score on validation set occurs at {manager.current_epoch +
 if train_type == "Basic" or train_type == "Deep_Super" or train_type == "Self_Distill_Original":
     ## Testing dataset with (image,label) for regional losses
     if dataset == "MMWHS":
-        _, validation_dataset, num_classes = data.load_challenge(data_dir, img_size=img_size, train_split=4, show_verbose=True)  # for MMWHS Dataset
+        _, validation_dataset, num_classes = data.load_challenge(data_dir, img_size=img_size, train_split=4, show_verbose=True, fold_no=fold_no)  # for MMWHS Dataset
     elif dataset == "MSD_BraTS":
         _, validation_dataset, testing_dataset, num_classes = data.load_msd(data_dir, img_size=img_size, train_split=24, show_verbose=True)  # for MSD_BraTS Dataset 
     else:

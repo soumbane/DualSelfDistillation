@@ -22,7 +22,7 @@ from .transforms import (
     ToTensord,
 )
 
-def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ranged: bool = True, train_split: int = 4, show_verbose: bool = False) -> Tuple[CacheDataset, CacheDataset, int]:
+def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ranged: bool = True, train_split: int = 4, show_verbose: bool = False, fold_no: str = "1") -> Tuple[CacheDataset, CacheDataset, int]:
     """
     Load dataset
 
@@ -45,19 +45,27 @@ def load(data_dir: str, img_size: Tuple[int, ...]=(96,96,96), scale_intensity_ra
     ## Divide the 20 patients for 5-fold Cross-Validation
 
     # Patient 1-4 (First 4 patients) for validation - Fold 1
-    # train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
+    if fold_no == "1":
+        train_data_dicts, val_data_dicts = data_dicts[train_split:], data_dicts[:train_split] 
 
     # Patient 5-8 for validation - Fold 2
-    # train_data_dicts, val_data_dicts = data_dicts[:train_split] + data_dicts[train_split+4:], data_dicts[train_split:train_split+4]
+    elif fold_no == "2":
+        train_data_dicts, val_data_dicts = data_dicts[:train_split] + data_dicts[train_split+4:], data_dicts[train_split:train_split+4]
 
     # Patient 9-12 for validation - Fold 3
-    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4] + data_dicts[train_split+4*2:], data_dicts[train_split+4:train_split+4*2] 
+    elif fold_no == "3":
+        train_data_dicts, val_data_dicts = data_dicts[:train_split+4] + data_dicts[train_split+4*2:], data_dicts[train_split+4:train_split+4*2] 
 
     # Patient 13-16 for validation - Fold 4
-    # train_data_dicts, val_data_dicts = data_dicts[:train_split+4*2] + data_dicts[train_split+4*3:], data_dicts[train_split+4*2:train_split+4*3] 
+    elif fold_no == "4":
+        train_data_dicts, val_data_dicts = data_dicts[:train_split+4*2] + data_dicts[train_split+4*3:], data_dicts[train_split+4*2:train_split+4*3] 
 
     # Patient 17-20 for validation - Fold 5
-    train_data_dicts, val_data_dicts = data_dicts[:train_split+4*3], data_dicts[train_split+4*3:] 
+    elif fold_no == "5":
+        train_data_dicts, val_data_dicts = data_dicts[:train_split+4*3], data_dicts[train_split+4*3:] 
+
+    else:
+        raise ValueError(f'Invalid fold number: {fold_no}')
     
     ##############################################################################################################
 
