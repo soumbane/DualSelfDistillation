@@ -33,17 +33,17 @@ train_type = "Self_Distill_Original"
 # train_type = "Self_Distill_DistMaps"
 
 ## Set Pre-trained Model Architecture
-# arch = "UNETR"
+arch = "UNETR"
 # arch = "SwinUNETR"
-arch = "nnUnet"
+# arch = "nnUnet"
 
 ## Fold number for MMWHS dataset ONLY
-fold_no = "5"
+fold_no = "4"
 fold = "Fold_" + fold_no
 
 ## choose best or last model
-saved_model = "last"
-# saved_model = "best"
+# saved_model = "last"
+saved_model = "best"
 
 device = "cuda:0"
 
@@ -63,7 +63,10 @@ else:
 ## Important: Please set scale_intensity_ranged = True for CT and scale_intensity_ranged = False for MR in both data loading files challenge.py and challenge_dist_map.py. These are the preprocessing steps needed for inference (validation and testing)
 
 if train_type == "Basic":
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")
+
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_Basic_Fold4.exp/last.model")
+
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_Basic_Fold" + fold_no + ".exp/" + saved_model + ".model")    
 
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_Basic.exp/last.model")
 
@@ -77,7 +80,10 @@ elif train_type == "Deep_Super":
     print(f"{mode} with the Basic {arch} architecture with Deep Supervision on {dataset} dataset with {modality} modality ....")
 
 elif train_type == "Self_Distill_Original":
-    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
+
+    best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MMWHS_UNETR_CT_models_final", "Fold_4", "CT_MMWHS_UNETR_SelfDist_Original_Fold4.exp/last.model")
+
+    # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_" + dataset + "_" + arch + "_" + modality + "_models_final", fold, modality + "_" + dataset + "_" + arch + "_SelfDist_Original_Fold" + fold_no + ".exp/" + saved_model + ".model")
 
     # best_model_path = os.path.join(root, "DSD_experiments_TMI", "pretrained_MSD_BraTS_SwinUNETR_multimodalMR_models_final", "multimodalMR_MSD_BraTS_SwinUNETR_SelfDist_Original.exp/last.model")
     # best_model_path = os.path.join("experiments", "CT_MMWHS_nnUnet_SelfDist_Original_Fold1_multi_upsample_trainable.exp/last.model")
