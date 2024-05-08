@@ -63,38 +63,38 @@ if __name__ == "__main__":
     ## Initialize the UNETR model
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)
 
-    # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only
+    model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=32, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only
 
     # model = SelfDistilUNETR(in_channels, num_classes, img_size=config.img_size, self_distillation=True, use_feature_maps=False, mode=UpsampleMode.DECONV, interp_mode=InterpolateMode.BILINEAR, multiple_upsample=True, feature_size=16, hidden_size=768, mlp_dim=3072, num_heads=12, pos_embed="perceptron", norm_name="instance", res_block=True, dropout_rate=0.0)  # MMWHS CT only Ablation and MSD-BraTS
 
     ##########################################################################################################
     ## Initialize the nnUNet model
 
-    kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
-    strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
-    filters = [32,64,128,256,320]  # originally used (for MMWHS)
-    # filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations or MMWHS Ablation
+    # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
+    # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
+    # filters = [32,64,128,256,320]  # originally used (for MMWHS)
+    # # filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations or MMWHS Ablation
 
-    model = SelfDistilnnUNet(
-        spatial_dims = 3,
-        in_channels = in_channels,
-        out_channels = num_classes,
-        kernel_size = kernel_size,
-        strides = strides,
-        upsample_kernel_size = strides[1:],
-        filters=filters,
-        norm_name="instance",
-        deep_supervision=False,
-        deep_supr_num=3,
-        self_distillation=True,
-        self_distillation_num=4,
-        mode=UpsampleMode.DECONV, 
-        interp_mode=InterpolateMode.BILINEAR,
-        multiple_upsample=True,
-        dataset = "MMWHS",
-        # dataset="MSD-BraTS",
-        res_block=True,
-        )
+    # model = SelfDistilnnUNet(
+    #     spatial_dims = 3,
+    #     in_channels = in_channels,
+    #     out_channels = num_classes,
+    #     kernel_size = kernel_size,
+    #     strides = strides,
+    #     upsample_kernel_size = strides[1:],
+    #     filters=filters,
+    #     norm_name="instance",
+    #     deep_supervision=False,
+    #     deep_supr_num=3,
+    #     self_distillation=True,
+    #     self_distillation_num=4,
+    #     mode=UpsampleMode.DECONV, 
+    #     interp_mode=InterpolateMode.BILINEAR,
+    #     multiple_upsample=True,
+    #     dataset = "MMWHS",
+    #     # dataset="MSD-BraTS",
+    #     res_block=True,
+    #     )
     
     ##########################################################################################################
     ## Initialize the SwinUNETR model
