@@ -1,5 +1,5 @@
 """
-Main training script to train a Basic UNETR/nnUNet with MMWHS Challenge dataset for CT/MR and MSD-BraTS
+Main training script to train a Basic UNETR/nnUNet/SwinUNETR/VNet with MMWHS Challenge dataset for CT/MR and MSD-BraTS
 """
 # pyright: reportPrivateImportUsage=false
 from csv import writer
