@@ -18,6 +18,7 @@ from torchmanager_monai import Manager, metrics
 from networks import SelfDistillUNETRWithDictOutput as SelfDistilUNETR
 from networks import SelfDistillnnUNetWithDictOutput as SelfDistilnnUNet
 from networks import SelfDistillSwinUNETRWithDictOutput as SelfDistilSwinUNETR
+from networks import SelfDistillVNetWithDictOutput as SelfDistillVNet
 from torchmanager import callbacks, losses
 
 from torchmanager_core import random
@@ -43,12 +44,12 @@ if __name__ == "__main__":
     last_ckpt_dir = os.path.join(config.experiment_dir, "last.model")
     
     # # load dataset - Load MMWHS Challenge Data
-    in_channels = 1
-    training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
+    # in_channels = 1
+    # training_dataset, validation_dataset, num_classes = data.load_challenge(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) # type:ignore
 
     # load dataset - Load MSD-BraTS Data
-    # in_channels = 4
-    # training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
+    in_channels = 4
+    training_dataset, validation_dataset, _, num_classes = data.load_msd(config.data, config.img_size, train_split=config.training_split, show_verbose=config.show_verbose) 
         
     training_dataset = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=True, collate_fn=pad_list_data_collate)
     validation_dataset = DataLoader(validation_dataset, batch_size=1, collate_fn=pad_list_data_collate)
@@ -63,32 +64,40 @@ if __name__ == "__main__":
     
     ##########################################################################################################
     ## Initialize the nnUNet model
-    kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
-    strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
-    # filters = [32,64,128,256,320]  # originally used for MMWHS
-    filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations
+    # kernel_size = [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]] # input + 3 Enc-Dec Layers + Bottleneck
+    # strides = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]] # input + 3 Enc-Dec Layers + Bottleneck
+    # # filters = [32,64,128,256,320]  # originally used for MMWHS
+    # filters = [16,32,64,128,256] # for MSD-BraTS due to memory limitations
 
-    model = SelfDistilnnUNet(
-        spatial_dims = 3,
-        in_channels = in_channels,
-        out_channels = num_classes,
-        kernel_size = kernel_size,
-        strides = strides,
-        upsample_kernel_size = strides[1:],
-        filters=filters,
-        norm_name="instance",
-        deep_supervision=False,
-        deep_supr_num=3,
-        self_distillation=False,
-        self_distillation_num=4,
-        res_block=True
-        )
+    # model = SelfDistilnnUNet(
+    #     spatial_dims = 3,
+    #     in_channels = in_channels,
+    #     out_channels = num_classes,
+    #     kernel_size = kernel_size,
+    #     strides = strides,
+    #     upsample_kernel_size = strides[1:],
+    #     filters=filters,
+    #     norm_name="instance",
+    #     deep_supervision=False,
+    #     deep_supr_num=3,
+    #     self_distillation=False,
+    #     self_distillation_num=4,
+    #     res_block=True
+    #     )
     
     ##########################################################################################################
     ## Initialize the SwinUNETR model
     # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=36, self_distillation=False)  # MMWHS CT only
 
     # model = SelfDistilSwinUNETR(img_size=config.img_size, in_channels=in_channels, out_channels=num_classes, feature_size=12, self_distillation=False)  # MSD-BraTS
+
+    ##########################################################################################################
+    ## Initialize the VNet model
+    model = SelfDistillVNet(
+        spatial_dims = 3,
+        in_channels = in_channels,
+        out_channels = num_classes
+        ) # for MSD-BraTS and MMWHS(MR/CT)
 
     ##########################################################################################################
     ## Count model parameters
@@ -99,12 +108,12 @@ if __name__ == "__main__":
     ##########################################################################################################
     
     # initialize optimizer, loss, metrics, and post processing
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5) # lr used by MMWHS challenge winner/MSD-BraTS
 
     # # initialize learning rate scheduler (lr used by MMWHS challenge winner)
-    lr_step = max(int(config.epochs / 6), 1)  # for nnUNet and UNETR (MMWHS-CT)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5)  # used for MMWHS
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
+    # lr_step = max(int(config.epochs / 6), 1)  # for nnUNet and UNETR (MMWHS-CT)
+    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_step, gamma=0.5)  # used for MMWHS
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5) # lr=0.0001 # for MSD-BraTS
 
     # Initilialize Loss Functions
     loss_fn: Union[losses.Loss, dict[str, losses.Loss]]
@@ -141,11 +150,11 @@ if __name__ == "__main__":
 
     last_ckpt_callback = callbacks.LastCheckpoint(manager, last_ckpt_dir)
     besti_ckpt_callback = callbacks.BestCheckpoint("dice", manager, best_ckpt_dir)
-    lr_scheduler_callback = callbacks.LrSchedueler(lr_scheduler, tf_board_writer=tensorboard_callback.writer)
+    # lr_scheduler_callback = callbacks.LrSchedueler(lr_scheduler, tf_board_writer=tensorboard_callback.writer)
 
     # Final callbacks list
-    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, lr_scheduler_callback]
-    # callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback]
+    # callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback, lr_scheduler_callback]
+    callbacks_list: list[callbacks.Callback] = [tensorboard_callback, besti_ckpt_callback, last_ckpt_callback]
 
     # train
     manager.fit(training_dataset, config.epochs, val_dataset=validation_dataset, device=config.device, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, show_verbose=config.show_verbose)
@@ -157,7 +166,8 @@ if __name__ == "__main__":
     logging.info(summary)
 
     # save and test with best model on validation dataset  
-    manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic_filters16_Ablation_Fold5.exp/best.model") 
+    # manager = Manager.from_checkpoint("experiments/CT_MMWHS_UNETR_Basic_filters16_Ablation_Fold5.exp/best.model") 
+    manager = Manager.from_checkpoint("experiments/multimodalMR_MSD_BraTS_VNET_Basic.exp/best.model") 
 
     if isinstance(manager.model, torch.nn.parallel.DataParallel): model = manager.model.module
     else: model = manager.model

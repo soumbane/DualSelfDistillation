@@ -4,12 +4,21 @@
 from __future__ import annotations
 
 from scipy import spatial
+from typing import Union
 import torch
 import torch.nn as nn
 
 from monai.networks.blocks.convolutions import Convolution
 from monai.networks.layers.factories import Act, Conv, Dropout, Norm, split_args
 from monai.utils import deprecated_arg  # type: ignore
+
+from monai.utils import UpsampleMode, InterpolateMode # type: ignore
+
+# Relative import for final training model
+from .deepUp import DeepUp
+
+# Absolute import for testing this script
+# from deepUp import DeepUp
 
 
 def get_acti_layer(act: tuple[str, dict] | str, nchan: int = 0):
@@ -209,9 +218,6 @@ class SelfDistillVNet(nn.Module):
             According to `Performance Tuning Guide <https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html>`_,
             if a conv layer is directly followed by a batch norm layer, bias should be False.
 
-    .. deprecated:: 1.2
-        ``dropout_prob`` is deprecated in favor of ``dropout_prob_down`` and ``dropout_prob_up``.
-
     """
 
     @deprecated_arg(
@@ -228,6 +234,10 @@ class SelfDistillVNet(nn.Module):
         spatial_dims: int = 3,
         in_channels: int = 1,
         out_channels: int = 1,
+        self_distillation: bool = False,
+        mode: Union[UpsampleMode, str] = UpsampleMode.DECONV,
+        interp_mode: Union[InterpolateMode, str] = InterpolateMode.LINEAR,
+        multiple_upsample: bool = True,
         act: tuple[str, dict] | str = ("elu", {"inplace": True}),
         dropout_prob: float | None = 0.5,  # deprecated
         dropout_prob_down: float | None = 0.5,
@@ -251,25 +261,203 @@ class SelfDistillVNet(nn.Module):
         self.up_tr32 = UpTransition(spatial_dims, 64, 32, 1, act)
         self.out_tr = OutputTransition(spatial_dims, 32, out_channels, act, bias=bias)
 
+        self.self_distillation = self_distillation
+
+        #########################################
+        # Upsample blocks for Self Distillation #
+        #########################################
+
+        if self_distillation:            
+            self.deep_down_tr128_enc = DeepUp(
+            spatial_dims = 3,
+            in_channels = 128,
+            out_channels = out_channels,
+            scale_factor = 8,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
+            self.deep_down_tr256_dec = DeepUp(
+            spatial_dims = 3,
+            in_channels = 256,
+            out_channels = out_channels,
+            scale_factor = 16,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )       
+
+            self.deep_down_tr64_enc = DeepUp(
+            spatial_dims = 3,
+            in_channels = 64,
+            out_channels = out_channels,
+            scale_factor = 4,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
+            self.deep_up_tr256_dec = DeepUp(
+            spatial_dims = 3,
+            in_channels = 256,
+            out_channels = out_channels,
+            scale_factor = 8,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
+            self.deep_down_tr32_enc = DeepUp(
+            spatial_dims = 3,
+            in_channels = 32,
+            out_channels = out_channels,
+            scale_factor = 2,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
+            self.deep_up_tr128_dec = DeepUp(
+            spatial_dims = 3,
+            in_channels = 128,
+            out_channels = out_channels,
+            scale_factor = 4,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
+            self.deep_in_tr_enc = DeepUp(
+            spatial_dims = 3,
+            in_channels = 16,
+            out_channels = out_channels,
+            scale_factor = 1,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
+            self.deep_up_tr64_dec = DeepUp(
+            spatial_dims = 3,
+            in_channels = 64,
+            out_channels = out_channels,
+            scale_factor = 2,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
+            self.deep_up_tr32_dec = DeepUp(
+            spatial_dims = 3,
+            in_channels = 32,
+            out_channels = out_channels,
+            scale_factor = 1,
+            mode=mode, 
+            interp_mode=interp_mode,
+            multiple_upsample=multiple_upsample
+            )
+
     def forward(self, x):
         out16 = self.in_tr(x)
+        print(f'Output of in_tr: {out16.shape}')
+
+        if self.self_distillation:
+            out_enc1 = self.deep_in_tr_enc(out16) 
+        else:
+            out_enc1 = None   
+
         out32 = self.down_tr32(out16)
+        print(f'Output of down_tr32: {out32.shape}')
+
+        if self.self_distillation:
+            out_enc2 = self.deep_down_tr32_enc(out32) 
+        else:
+            out_enc2 = None
+
         out64 = self.down_tr64(out32)
+        print(f'Output of down_tr64: {out64.shape}')
+
+        if self.self_distillation:
+            out_enc3 = self.deep_down_tr64_enc(out64) 
+        else:
+            out_enc3 = None
+
         out128 = self.down_tr128(out64)
+        print(f'Output of down_tr128: {out128.shape}')
+
+        if self.self_distillation:
+            out_enc4 = self.deep_down_tr128_enc(out128) 
+        else:
+            out_enc4 = None
+
         out256 = self.down_tr256(out128)
+        print(f'Output of down_tr256: {out256.shape}')
+
+        if self.self_distillation:
+            out_dec4 = self.deep_down_tr256_dec(out256) 
+        else:
+            out_dec4 = None
+        
         x = self.up_tr256(out256, out128)
+        print(f'Output of up_tr256: {x.shape}')
+
+        if self.self_distillation:
+            out_dec3 = self.deep_up_tr256_dec(x) 
+        else:
+            out_dec3 = None
+
         x = self.up_tr128(x, out64)
+        print(f'Output of up_tr128: {x.shape}')
+
+        if self.self_distillation:
+            out_dec2 = self.deep_up_tr128_dec(x) 
+        else:
+            out_dec2 = None
+
         x = self.up_tr64(x, out32)
+        print(f'Output of up_tr64: {x.shape}')
+
+        if self.self_distillation:
+            out_dec1 = self.deep_up_tr64_dec(x) 
+        else:
+            out_dec1 = None
+
         x = self.up_tr32(x, out16)
-        x = self.out_tr(x)
-        return x    
+        print(f'Output of up_tr32: {x.shape}')
+
+        '''if self.self_distillation:
+            out_dec1 = self.deep_up_tr32_dec(x) 
+        else:
+            out_dec1 = None'''
+
+        out_main = self.out_tr(x)
+
+        # For Self Distillation (ONLY during training)
+        if self.training and self.self_distillation:
+            ## For Self Distillation
+            # Encoders:out_enc4: deepest encoder and out_enc3, out_enc2, out_enc1: shallow encoders
+            # Decoders:out_dec1: deepest decoder and out_dec2, out_dec3, out_dec4: shallow decoders         
+                        
+            # Full KL Div WITHOUT feature maps - includes both encoders and decoders
+            out = (out_main, out_dec4, out_dec3, out_dec2, out_dec1, out_enc1, out_enc2, out_enc3, out_enc4)
+            
+        elif self.training and not self.self_distillation:
+            # For Basic VNET ONLY (NO Self-Distillation)
+            out = out_main  
+        else:
+            # For validation/testing (NO Self-Distillation)
+            out = out_main
+
+        return out    
 
 
 if __name__ == '__main__':
     vnet_with_self_distil = SelfDistillVNet(
         spatial_dims = 3,
         in_channels = 1,
-        out_channels = 8
+        out_channels = 8,
+        self_distillation = True,
         )
 
     ## Count model parameters
@@ -280,5 +468,10 @@ if __name__ == '__main__':
     x1 = torch.rand((1, 1, 96, 96, 96)) # (B,num_ch,x,y,z)
     print("VNet input shape: ", x1.shape)
 
+    # x4 = vnet_with_self_distil(x1)
+    # print("Self Distil VNet output shape: ", x4.shape)
+
     x4 = vnet_with_self_distil(x1)
-    print("Self Distil VNet output shape: ", x4.shape)
+    print("Self Distil VNet output main shape: ", x4[0].shape)
+    print("Self Distil VNet output dec shape: ", x4[1].shape)
+    print("Self Distil VNet output enc shape: ", x4[8].shape)

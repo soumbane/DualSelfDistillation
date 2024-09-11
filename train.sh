@@ -1,1 +1,1 @@
-python train_SelfDistil_Original.py /home/share/Data/Data_MMWHS_All/CT _ --img_size 96 96 96 --batch_size 1 --epochs 1 --experiment test.exp --training_split 4 --device cuda:1 --show_verbose
+python train_basic.py /home/share/Data/Data_MSD_BraTS /home/neil/Lab_work/Medical_Image_Segmentation/Dual_SelfDistillation/trained_models/last_MSD_BraTS_Basic.pth --img_size 128 128 128 --batch_size 1 --epochs 300 --experiment multimodalMR_MSD_BraTS_VNET_Basic.exp --training_split 24 --device cuda:0 --show_verbose
