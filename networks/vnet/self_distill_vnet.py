@@ -267,7 +267,7 @@ class SelfDistillVNet(nn.Module):
         # Upsample blocks for Self Distillation #
         #########################################
 
-        if self_distillation:            
+        if self.self_distillation:            
             self.deep_down_tr128_enc = DeepUp(
             spatial_dims = 3,
             in_channels = 128,
@@ -359,8 +359,9 @@ class SelfDistillVNet(nn.Module):
             )
 
     def forward(self, x):
+        
         out16 = self.in_tr(x)
-        print(f'Output of in_tr: {out16.shape}')
+        # print(f'Output of in_tr: {out16.shape}')
 
         if self.self_distillation:
             out_enc1 = self.deep_in_tr_enc(out16) 
@@ -368,7 +369,7 @@ class SelfDistillVNet(nn.Module):
             out_enc1 = None   
 
         out32 = self.down_tr32(out16)
-        print(f'Output of down_tr32: {out32.shape}')
+        # print(f'Output of down_tr32: {out32.shape}')
 
         if self.self_distillation:
             out_enc2 = self.deep_down_tr32_enc(out32) 
@@ -376,7 +377,7 @@ class SelfDistillVNet(nn.Module):
             out_enc2 = None
 
         out64 = self.down_tr64(out32)
-        print(f'Output of down_tr64: {out64.shape}')
+        # print(f'Output of down_tr64: {out64.shape}')
 
         if self.self_distillation:
             out_enc3 = self.deep_down_tr64_enc(out64) 
@@ -384,7 +385,7 @@ class SelfDistillVNet(nn.Module):
             out_enc3 = None
 
         out128 = self.down_tr128(out64)
-        print(f'Output of down_tr128: {out128.shape}')
+        # print(f'Output of down_tr128: {out128.shape}')
 
         if self.self_distillation:
             out_enc4 = self.deep_down_tr128_enc(out128) 
@@ -392,7 +393,7 @@ class SelfDistillVNet(nn.Module):
             out_enc4 = None
 
         out256 = self.down_tr256(out128)
-        print(f'Output of down_tr256: {out256.shape}')
+        # print(f'Output of down_tr256: {out256.shape}')
 
         if self.self_distillation:
             out_dec4 = self.deep_down_tr256_dec(out256) 
@@ -400,7 +401,7 @@ class SelfDistillVNet(nn.Module):
             out_dec4 = None
         
         x = self.up_tr256(out256, out128)
-        print(f'Output of up_tr256: {x.shape}')
+        # print(f'Output of up_tr256: {x.shape}')
 
         if self.self_distillation:
             out_dec3 = self.deep_up_tr256_dec(x) 
@@ -408,7 +409,7 @@ class SelfDistillVNet(nn.Module):
             out_dec3 = None
 
         x = self.up_tr128(x, out64)
-        print(f'Output of up_tr128: {x.shape}')
+        # print(f'Output of up_tr128: {x.shape}')
 
         if self.self_distillation:
             out_dec2 = self.deep_up_tr128_dec(x) 
@@ -416,20 +417,16 @@ class SelfDistillVNet(nn.Module):
             out_dec2 = None
 
         x = self.up_tr64(x, out32)
-        print(f'Output of up_tr64: {x.shape}')
+        # print(f'Output of up_tr64: {x.shape}')
 
         if self.self_distillation:
             out_dec1 = self.deep_up_tr64_dec(x) 
+            # print(f'Output of out_dec1: {out_dec1.shape}')
         else:
             out_dec1 = None
 
         x = self.up_tr32(x, out16)
-        print(f'Output of up_tr32: {x.shape}')
-
-        '''if self.self_distillation:
-            out_dec1 = self.deep_up_tr32_dec(x) 
-        else:
-            out_dec1 = None'''
+        # print(f'Output of up_tr32: {x.shape}')
 
         out_main = self.out_tr(x)
 
@@ -455,8 +452,8 @@ class SelfDistillVNet(nn.Module):
 if __name__ == '__main__':
     vnet_with_self_distil = SelfDistillVNet(
         spatial_dims = 3,
-        in_channels = 1,
-        out_channels = 8,
+        in_channels = 4,
+        out_channels = 4,
         self_distillation = True,
         )
 
@@ -465,7 +462,7 @@ if __name__ == '__main__':
     print(f'The total number of model parameter is: {total_params}')
     
 
-    x1 = torch.rand((1, 1, 96, 96, 96)) # (B,num_ch,x,y,z)
+    x1 = torch.rand((1, 4, 128, 128, 128)) # (B,num_ch,x,y,z)
     print("VNet input shape: ", x1.shape)
 
     # x4 = vnet_with_self_distil(x1)
