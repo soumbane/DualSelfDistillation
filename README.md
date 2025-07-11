@@ -1,6 +1,6 @@
 # Dual self-distillation (DSD) of U-shaped networks for 3D medical image segmentation
 
-This is the official PyTorch implementation of the paper **Dual self-distillation (DSD) of U-shaped networks for 3D medical image segmentation** that was published in IEEE ISBI 2024 (Best Paper Award Nominee) conference and **Volumetric medical image segmentation through dual self-distillation in U-shaped networks** that was published in IEEE Transactions on Biomedical Engineering (TBME) journal, 2025.
+This is the official PyTorch implementation of the paper **Dual self-distillation (DSD) of U-shaped networks for 3D medical image segmentation** that was published in **IEEE ISBI 2024 (Best Paper Award Nominee)** conference and **Volumetric medical image segmentation through dual self-distillation in U-shaped networks** that was published in **IEEE Transactions on Biomedical Engineering (TBME)** journal, 2025.
 
 ## Requirements
 * Python >= 3.9
