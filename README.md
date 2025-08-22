@@ -1,4 +1,5 @@
 # Dual self-distillation (DSD) of U-shaped networks for 3D medical image segmentation
+![](networks/DSD_3D.png)
 
 This is the official PyTorch implementation of the paper **Dual self-distillation (DSD) of U-shaped networks for 3D medical image segmentation** that was published in **IEEE ISBI 2024 (Best Paper Award Nominee)** conference and **Volumetric medical image segmentation through dual self-distillation in U-shaped networks** that was published in **IEEE Transactions on Biomedical Engineering (TBME)** journal, 2025.
 
@@ -48,5 +49,6 @@ python train_SelfDistil_Original.py /Path/to/MMWHS/Data/Data_MMWHS_All/CT _ --im
 python eval.py
 ```
 * The settings such as modality, dataset, pretrained model path, fold number could be changed inside the `eval.py` file to get the desired results.
+
 
 
