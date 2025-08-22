@@ -49,3 +49,4 @@ python eval.py
 ```
 * The settings such as modality, dataset, pretrained model path, fold number could be changed inside the `eval.py` file to get the desired results.
 
+
