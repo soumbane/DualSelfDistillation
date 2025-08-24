@@ -50,6 +50,19 @@ python eval.py
 ```
 * The settings such as modality, dataset, pretrained model path, fold number could be changed inside the `eval.py` file to get the desired results.
 
+## Cite
+Please cite our paper if you find this work useful for your research:
+```
+@article{banerjee2025volumetric,
+  title={Volumetric medical image segmentation through dual self-distillation in U-shaped networks},
+  author={Banerjee, Soumyanil and Summerfield, Nicholas and Dong, Ming and Glide-Hurst, Carri},
+  journal={IEEE Transactions on Biomedical Engineering},
+  year={2025},
+  publisher={IEEE}
+}
+```
+
+
 
 
 
